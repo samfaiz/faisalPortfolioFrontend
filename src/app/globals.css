@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+/* Manual (class-based) dark mode: toggling `.dark` on <html> flips tokens. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Design tokens — transcribed from design_handoff_portfolio/README.md
+  ("Ledger Rounded" system). Light values live in :root, dark overrides in .dark.
+  @theme inline maps them to utilities (bg-paper, text-ink, border-hairline, ...).
+*/
+:root {
+  --paper: #faf9f5;          /* background */
+  --surface: #ffffff;        /* cards */
+  --surface-alt: #f1efe6;    /* tinted panels */
+  --ink: #15170f;            /* text / borders / dark panels */
+  --muted: #43473c;          /* body */
+  --muted-2: #5a5e52;        /* secondary */
+  --faint: #9a9d8f;          /* faint */
+  --hairline: #d9d6ca;       /* 1.5px borders */
+  --divider: #eceade;        /* 1px row dividers */
+
+  --accent: oklch(0.52 0.12 155);       /* ~#22915f */
+  --accent-strong: oklch(0.4 0.12 155); /* darker text-on-light */
+  --accent-soft: oklch(0.72 0.12 155);  /* light-on-dark */
+
+  --on-dark: #faf9f5;
+  --on-dark-muted: #c9ccbf;
+  --on-dark-faint: #8a8d82;
+
+  --scanline: rgba(21, 23, 15, 0.02);
+}
+
+.dark {
+  --paper: #15170f;
+  --surface: #1c1e15;
+  --surface-alt: #23261b;
+  --ink: #faf9f5;
+  --muted: #c9ccbf;
+  --muted-2: #a8ac9d;
+  --faint: #8a8d82;
+  --hairline: #33362a;
+  --divider: #2a2d20;
+
+  --accent: oklch(0.72 0.12 155);
+  --accent-strong: oklch(0.78 0.12 155);
+  --accent-soft: oklch(0.72 0.12 155);
+
+  --on-dark: #faf9f5;
+  --on-dark-muted: #c9ccbf;
+  --on-dark-faint: #8a8d82;
+
+  --scanline: rgba(250, 249, 245, 0.02);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-faint: var(--faint);
+  --color-hairline: var(--hairline);
+  --color-divider: var(--divider);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-dark: var(--on-dark);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --color-on-dark-faint: var(--on-dark-faint);
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-pill: 999px;
+  --radius-lg: 20px;
+  --radius-md: 16px;
+  --radius-sm: 11px;
+  --radius-page: 24px;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  body {
+    font-family: var(--font-display);
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--paper);
+  }
+}
+
+@layer components {
+  /* Signature offset shadow on featured frames. */
+  .shadow-offset {
+    box-shadow: 8px 8px 0 oklch(0.52 0.12 155 / 0.25);
+  }
+  .shadow-offset-sm {
+    box-shadow: 5px 5px 0 oklch(0.52 0.12 155 / 0.22);
+  }
+
+  /* Scanline overlay for hero / dark panels. */
+  .scanlines {
+    position: relative;
+  }
+  .scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 5px,
+      var(--scanline) 5px,
+      var(--scanline) 6px
+    );
+    border-radius: inherit;
+  }
+
+  /* 45deg striped image placeholder. */
+  .stripes {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--surface-alt),
+      var(--surface-alt) 12px,
+      var(--paper) 12px,
+      var(--paper) 24px
+    );
+  }
+
+  /* Mono label: 10.5–12px, uppercase, tracked. */
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+}
+
+@layer utilities {
+  .text-stroke-ink {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--ink);
+  }
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+  .animate-blink {
+    animation: blink 1.1s step-end infinite;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-blink {
+    animation: none;
+  }
+}
