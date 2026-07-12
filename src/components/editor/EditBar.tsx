@@ -105,6 +105,22 @@ export function EditBar() {
         >
           PUBLISH →
         </button>
+
+        <Divider />
+
+        {/* Exit editing + sign out — clears the token and hides the bar. */}
+        <button
+          type="button"
+          onClick={() => {
+            if (ed.isDirty && !confirm("You have unsaved changes. Exit and sign out anyway? Unpublished edits will be lost."))
+              return;
+            ed.signOut();
+          }}
+          title="Exit editing & sign out"
+          className="mono-label rounded-pill px-3 py-1.5 text-on-dark-muted transition-colors hover:bg-white/10 hover:text-on-dark"
+        >
+          EXIT ⏻
+        </button>
       </div>
     </div>
   );

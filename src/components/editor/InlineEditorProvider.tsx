@@ -24,6 +24,7 @@ import {
 import {
   createWriteClient,
   getToken,
+  setToken,
   type WriteClient,
 } from "@/lib/editor/write-client";
 import { getByPath, getStyle, parseBinding, setByPath, setStyle } from "@/lib/editor/paths";
@@ -83,6 +84,8 @@ export interface EditorContextValue {
   enabled: boolean;
   editMode: boolean;
   setEditMode: (on: boolean) => void;
+  /** Clear the admin token, exit edit mode, and hide the editor chrome. */
+  signOut: () => void;
 
   getField: (binding: string) => unknown;
   setField: (binding: string, value: unknown, opts?: { commit?: boolean }) => void;
@@ -330,10 +333,22 @@ export function InlineEditorProvider({
     return () => window.removeEventListener("keydown", onKey);
   }, [editMode]);
 
+  // Exit editing entirely: drop the token (localStorage + state) so `enabled`
+  // flips false and all editor chrome unmounts, and turn edit mode off.
+  const signOut = () => {
+    setEditMode(false);
+    setActiveField(null);
+    if (!localOnly) {
+      setToken(null);
+      setTokenState(null);
+    }
+  };
+
   const value: EditorContextValue = {
     enabled: localOnly || !!token,
     editMode,
     setEditMode,
+    signOut,
     getField,
     setField,
     getFieldStyle,
