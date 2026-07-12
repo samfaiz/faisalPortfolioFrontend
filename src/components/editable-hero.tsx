@@ -1,15 +1,13 @@
 "use client";
 
 /**
- * EditableHero — the real Home hero, wired into the Phase 2 inline editor.
+ * EditableHero — the real Home hero with inline-editor bindings (Phase 2).
  *
- * Wraps the hero in <InlineEditorRoot> and binds each text/image node with
- * <Editable>/<EditableImage>. With no admin token it renders identical public
- * output (SSR-safe); once logged in (localStorage cms_token), the EDIT MODE bar
- * appears, fields become editable in place, autosave PATCHes the draft, and
- * Publish promotes it live — the full vertical slice.
+ * Binds each text/image node with <Editable>/<EditableImage>. The editor root
+ * (provider + edit bar) is mounted once at the page level so the whole home page
+ * shares a single edit session; this component only contributes bindings. With
+ * no admin token it renders identical public output (SSR-safe).
  */
-import { InlineEditorRoot } from "@/components/editor/InlineEditorRoot";
 import { Editable } from "@/components/editor/Editable";
 import { EditableImage } from "@/components/editor/EditableImage";
 import { BootLine } from "@/components/boot-line";
@@ -17,8 +15,7 @@ import type { HeroSection } from "@/lib/types";
 
 export function EditableHero({ hero }: { hero: HeroSection }) {
   return (
-    <InlineEditorRoot initialSections={{ home_hero: hero as unknown as Record<string, unknown> }}>
-      <section className="px-4 pt-6 sm:px-5">
+    <section className="px-4 pt-6 sm:px-5">
         <div className="scanlines mx-auto max-w-6xl rounded-page border-[1.5px] border-hairline bg-surface p-6 sm:p-10">
           <div className="flex flex-wrap items-center gap-3">
             {/* Boot line keeps its typing animation (not inline-edited in this slice). */}
@@ -70,7 +67,6 @@ export function EditableHero({ hero }: { hero: HeroSection }) {
             />
           </div>
         </div>
-      </section>
-    </InlineEditorRoot>
+    </section>
   );
 }

@@ -81,7 +81,7 @@ export default async function ExperiencePage() {
             </div>
 
             {/* Dark mono summary card */}
-            <div className="scanlines rounded-lg bg-ink p-6 font-mono text-[13px] text-on-dark">
+            <div className="scanlines rounded-lg bg-panel p-6 font-mono text-[13px] text-on-dark">
               <div className="grid gap-2">
                 <Row k="years_in_security" v={stats.years_in_security} />
                 <Row k="incidents_handled" v={stats.incidents_handled} />

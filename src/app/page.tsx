@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { api, fallback } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Marquee } from "@/components/marquee";
 import { LiveViewer } from "@/components/live-viewer";
 import { EditableHero } from "@/components/editable-hero";
+import { InlineEditorRoot } from "@/components/editor/InlineEditorRoot";
+import { Editable } from "@/components/editor/Editable";
 import { JsonLd } from "@/components/json-ld";
 import { buildMetadata, faqJsonLd, fetchPageSeo } from "@/lib/seo";
 
@@ -21,13 +23,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [hero, projects, experiences, seo] = await Promise.all([
+  const [hero, about, skills, projects, experiences, seo] = await Promise.all([
     api.hero(),
+    api.about(),
+    api.skills(),
     api.projects(),
     api.experiences(),
     fetchPageSeo("home"),
   ]);
-  const { aboutIntro, skills } = fallback;
 
   // Baseline structured data — always emitted, merged with any backend JSON-LD.
   const baselineLd: Record<string, unknown>[] = [
@@ -53,9 +56,16 @@ export default async function Home() {
   ];
 
   return (
-    <>
+    <InlineEditorRoot
+      initialSections={
+        { home_hero: hero, home_about: about, home_skills: skills } as unknown as Record<
+          string,
+          Record<string, unknown>
+        >
+      }
+    >
       <JsonLd data={jsonLd} />
-      {/* ===== Hero (inline-editable — Phase 2 vertical slice) ===== */}
+      {/* ===== Hero (inline-editable) ===== */}
       <EditableHero hero={hero} />
 
       {/* ===== Marquee ===== */}
@@ -65,24 +75,40 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ===== About teaser /01 ===== */}
+      {/* ===== About teaser /01 (inline-editable) ===== */}
       <section className="px-4 py-10 sm:px-5">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[auto_1fr]">
           <div>
-            <span className="mono-label grid size-9 place-items-center rounded-md bg-accent/10 font-semibold text-accent-strong">
-              {aboutIntro.eyebrow}
-            </span>
+            <Editable
+              field="home_about.eyebrow"
+              as="span"
+              className="mono-label grid size-9 place-items-center rounded-md bg-accent/10 font-semibold text-accent-strong"
+            >
+              {about.eyebrow}
+            </Editable>
           </div>
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
-              <h2 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[-0.03em]">{aboutIntro.heading}</h2>
-              <p className="mt-4 text-[15px] leading-[1.85] text-muted">{aboutIntro.body}</p>
+              <Editable
+                field="home_about.heading"
+                as="h2"
+                className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[-0.03em]"
+              >
+                {about.heading}
+              </Editable>
+              <Editable field="home_about.body" as="p" className="mt-4 text-[15px] leading-[1.85] text-muted">
+                {about.body}
+              </Editable>
             </div>
             <div className="grid grid-cols-2 gap-3 self-start">
-              {aboutIntro.facts.map((f) => (
-                <div key={f.label} className={`rounded-md border-[1.5px] p-4 ${f.accent ? "border-accent/45 bg-accent/10" : "border-hairline bg-surface"}`}>
-                  <div className="mono-label text-faint">{f.label}</div>
-                  <div className="mt-1.5 text-sm font-medium text-ink">{f.value}</div>
+              {about.facts.map((f, i) => (
+                <div key={i} className={`rounded-md border-[1.5px] p-4 ${f.accent ? "border-accent/45 bg-accent/10" : "border-hairline bg-surface"}`}>
+                  <Editable field={`home_about.facts.${i}.label`} as="div" className="mono-label text-faint">
+                    {f.label}
+                  </Editable>
+                  <Editable field={`home_about.facts.${i}.value`} as="div" className="mt-1.5 text-sm font-medium text-ink">
+                    {f.value}
+                  </Editable>
                 </div>
               ))}
             </div>
@@ -90,20 +116,31 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ===== Skills /02 ===== */}
+      {/* ===== Skills /02 (inline-editable) ===== */}
       <section className="px-4 py-10 sm:px-5">
         <div className="mx-auto max-w-6xl">
-          <SectionLabel n="/02" title="What I do" />
+          <div className="flex items-baseline gap-3">
+            <span className="mono-label text-accent-strong">/02</span>
+            <Editable field="home_skills.title" as="h2" className="font-display text-[clamp(1.5rem,3.5vw,2.5rem)] font-bold tracking-[-0.03em]">
+              {skills.title}
+            </Editable>
+          </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {skills.map((s) => (
-              <div key={s.label} className={`rounded-lg border-2 border-ink p-6 ${s.tinted ? "bg-surface-alt" : "bg-surface"}`}>
+            {skills.groups.map((s, gi) => (
+              <div key={gi} className={`rounded-lg border-2 border-ink p-6 ${s.tinted ? "bg-surface-alt" : "bg-surface"}`}>
                 <div className="flex items-center gap-2">
                   <span className="size-2.5 rounded-full" style={{ background: s.dot }} />
-                  <span className="mono-label font-semibold text-ink">{s.label}</span>
+                  <Editable field={`home_skills.groups.${gi}.label`} as="span" className="mono-label font-semibold text-ink">
+                    {s.label}
+                  </Editable>
                 </div>
                 <ul className="mt-4 space-y-0 text-[15px] leading-[2.15] text-muted">
-                  {s.items.map((it) => (
-                    <li key={it}>{it}</li>
+                  {s.items.map((it, ii) => (
+                    <li key={ii}>
+                      <Editable field={`home_skills.groups.${gi}.items.${ii}`} as="span">
+                        {it}
+                      </Editable>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -148,7 +185,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
-    </>
+    </InlineEditorRoot>
   );
 }
 

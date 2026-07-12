@@ -101,6 +101,28 @@ export interface SiteSection {
   tagline?: string | null;
 }
 
+/** Home "about" teaser — editable section `home_about`. */
+export interface AboutSection {
+  eyebrow: string;
+  heading: string;
+  body: string;
+  facts: { label: string; value: string; accent?: boolean }[];
+}
+
+/** A single skills column. */
+export interface SkillGroup {
+  label: string;
+  dot: string;
+  tinted?: boolean;
+  items: string[];
+}
+
+/** Home "what I do" grid — editable section `home_skills`. */
+export interface SkillsSection {
+  title: string;
+  groups: SkillGroup[];
+}
+
 /** Public site settings (theme default, logo, SEO defaults) — GET /settings. */
 export interface SiteSettings {
   theme: { default: "system" | "light" | "dark"; accent: string | null };

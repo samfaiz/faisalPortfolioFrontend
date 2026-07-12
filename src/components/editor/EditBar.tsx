@@ -31,7 +31,7 @@ export function EditBar() {
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4">
-      <div className="scanlines flex flex-wrap items-center gap-2 rounded-pill border-[1.5px] border-ink/80 bg-ink px-2.5 py-2 text-on-dark shadow-offset-sm">
+      <div className="scanlines flex flex-wrap items-center gap-2 rounded-pill border-[1.5px] border-ink/80 bg-panel px-2.5 py-2 text-on-dark shadow-offset-sm">
         {/* Mode toggle */}
         <button
           type="button"

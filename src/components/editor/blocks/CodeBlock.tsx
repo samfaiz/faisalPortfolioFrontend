@@ -6,7 +6,7 @@
 
 export function CodeBlock({ code, language }: { code: string; language?: string }) {
   return (
-    <figure className="my-5 overflow-hidden rounded-md border border-hairline bg-ink">
+    <figure className="my-5 overflow-hidden rounded-md border border-hairline bg-panel">
       <figcaption className="mono-label flex items-center justify-between border-b border-white/10 px-3 py-1.5 text-on-dark-muted">
         <span>{language ?? "code"}</span>
       </figcaption>

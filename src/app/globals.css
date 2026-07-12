@@ -12,7 +12,8 @@
   --paper: #faf9f5;          /* background */
   --surface: #ffffff;        /* cards */
   --surface-alt: #f1efe6;    /* tinted panels */
-  --ink: #15170f;            /* text / borders / dark panels */
+  --ink: #15170f;            /* text / borders */
+  --panel: #15170f;          /* always-dark feature panels (footer, terminal, cards) */
   --muted: #43473c;          /* body */
   --muted-2: #5a5e52;        /* secondary */
   --faint: #9a9d8f;          /* faint */
@@ -35,6 +36,7 @@
   --surface: #1c1e15;
   --surface-alt: #23261b;
   --ink: #faf9f5;
+  --panel: #23261b;          /* stays dark, but elevated so it reads on the dark page */
   --muted: #c9ccbf;
   --muted-2: #a8ac9d;
   --faint: #8a8d82;
@@ -57,6 +59,7 @@
   --color-surface: var(--surface);
   --color-surface-alt: var(--surface-alt);
   --color-ink: var(--ink);
+  --color-panel: var(--panel);
   --color-muted: var(--muted);
   --color-muted-2: var(--muted-2);
   --color-faint: var(--faint);
@@ -97,6 +100,25 @@
 }
 
 @layer components {
+  /* Inline editor: make editable regions obvious once EDIT MODE is on.
+     The `.cms-editable` class is only present in edit mode, so a faint dashed
+     ring marks every editable field, brighter on hover, solid while editing. */
+  .cms-editable {
+    cursor: text;
+    border-radius: 5px;
+    outline: 1px dashed color-mix(in oklch, var(--accent) 40%, transparent);
+    outline-offset: 3px;
+    transition: outline-color 0.12s ease, background-color 0.12s ease;
+  }
+  .cms-editable:hover {
+    outline: 1.5px dashed var(--accent);
+    background-color: color-mix(in oklch, var(--accent) 9%, transparent);
+  }
+  .cms-editable:focus {
+    outline: 2px solid var(--accent);
+    background-color: color-mix(in oklch, var(--accent) 6%, transparent);
+  }
+
   /* Signature offset shadow on featured frames. */
   .shadow-offset {
     box-shadow: 8px 8px 0 oklch(0.52 0.12 155 / 0.25);

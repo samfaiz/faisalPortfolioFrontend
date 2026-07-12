@@ -7,6 +7,7 @@
  */
 import * as fallback from "./fallback";
 import type {
+  AboutSection,
   Certification,
   Experience,
   HeroSection,
@@ -14,6 +15,8 @@ import type {
   Project,
   SiteSection,
   SiteSettings,
+  SkillGroup,
+  SkillsSection,
   Stats,
 } from "./types";
 
@@ -46,6 +49,12 @@ async function get<T>(path: string, fb: T): Promise<T> {
 export const api = {
   site: () => get<SiteSection>("/sections/site", fallback.site),
   hero: () => get<HeroSection>("/sections/home_hero", fallback.hero),
+  about: () => get<AboutSection>("/sections/home_about", fallback.aboutIntro as AboutSection),
+  skills: () =>
+    get<SkillsSection>("/sections/home_skills", {
+      title: "What I do",
+      groups: fallback.skills as SkillGroup[],
+    }),
   projects: () => get<Project[]>("/projects", fallback.projects),
   project: (slug: string) =>
     get<Project | null>(`/projects/${slug}`, fallback.projects.find((p) => p.slug === slug) ?? null),

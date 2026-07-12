@@ -66,7 +66,7 @@ export default async function AboutPage() {
 
       {/* Dark CTA band */}
       <section className="px-4 pb-4 sm:px-5">
-        <div className="scanlines mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 rounded-page bg-ink p-8 text-on-dark">
+        <div className="scanlines mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 rounded-page bg-panel p-8 text-on-dark">
           <p className="font-display text-xl font-semibold">Curious how I work? See the projects.</p>
           <div className="flex gap-3">
             <Link href="/projects" className="mono-label rounded-pill bg-accent px-4 py-2.5 font-semibold text-paper">PROJECTS →</Link>

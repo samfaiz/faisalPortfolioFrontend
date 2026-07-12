@@ -16,6 +16,12 @@ export function EditTokenBridge() {
     if (!token) return;
 
     setToken(token);
+    // Signal the editor to open straight into EDIT MODE after the reload.
+    try {
+      sessionStorage.setItem("cms_autoedit", "1");
+    } catch {
+      /* sessionStorage unavailable */
+    }
     url.searchParams.delete("editToken");
     window.history.replaceState({}, "", url.toString());
     window.location.reload();

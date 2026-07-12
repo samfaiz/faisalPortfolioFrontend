@@ -154,6 +154,21 @@ export function InlineEditorProvider({
     setTokenState(getToken());
   }, [tokenProp, localOnly]);
 
+  // Arriving via "Edit visually" (?editToken) means the user wants to edit now —
+  // start in EDIT MODE instead of making them find the toggle. The bridge sets
+  // this one-shot flag before it reloads.
+  useEffect(() => {
+    if (!token || localOnly) return;
+    try {
+      if (sessionStorage.getItem("cms_autoedit") === "1") {
+        sessionStorage.removeItem("cms_autoedit");
+        setEditMode(true);
+      }
+    } catch {
+      /* sessionStorage unavailable */
+    }
+  }, [token, localOnly]);
+
   const client = useMemo<WriteClient | null>(
     () => (token && !localOnly ? createWriteClient(token) : null),
     [token, localOnly],

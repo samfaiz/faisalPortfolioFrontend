@@ -10,7 +10,7 @@ export function Footer({ site }: { site: SiteSection }) {
 
   return (
     <footer id="hire" className="px-4 pb-5 pt-8 sm:px-5">
-      <div className="scanlines mx-auto max-w-6xl rounded-page bg-ink p-8 text-on-dark sm:p-12">
+      <div className="scanlines mx-auto max-w-6xl rounded-page bg-panel p-8 text-on-dark sm:p-12">
         <span className="mono-label inline-block rounded-pill border border-on-dark-faint/40 px-3 py-1.5 text-on-dark-muted">
           &gt; want to hire me?_
         </span>

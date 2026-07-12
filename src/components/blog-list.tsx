@@ -47,7 +47,7 @@ export function BlogList({ posts }: { posts: Post[] }) {
         {featured && (
           <Link
             href={`/blog/${featured.slug}`}
-            className="scanlines shadow-offset group flex flex-col justify-between rounded-lg bg-ink p-7 text-on-dark"
+            className="scanlines shadow-offset group flex flex-col justify-between rounded-lg bg-panel p-7 text-on-dark"
           >
             <div>
               <div className="mono-label flex items-center gap-3 text-on-dark-faint">

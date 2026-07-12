@@ -108,7 +108,7 @@ export function ThemeEditor({ onClose }: { onClose?: () => void }) {
         <button
           onClick={() => void save()}
           disabled={status === "saving"}
-          className="mono-label flex-1 rounded bg-ink px-3 py-1.5 text-on-dark disabled:opacity-50"
+          className="mono-label flex-1 rounded bg-panel px-3 py-1.5 text-on-dark disabled:opacity-50"
         >
           {status === "saving" ? "SAVING…" : status === "saved" ? "SAVED ✓" : "SAVE"}
         </button>
