@@ -10,16 +10,16 @@
  */
 import { Editable } from "@/components/editor/Editable";
 import { EditableImage } from "@/components/editor/EditableImage";
-import { BootLine } from "@/components/boot-line";
+import { BootLineEditable, type BootLinePost } from "@/components/boot-line-editable";
 import type { HeroSection } from "@/lib/types";
 
-export function EditableHero({ hero }: { hero: HeroSection }) {
+export function EditableHero({ hero, posts = [] }: { hero: HeroSection; posts?: BootLinePost[] }) {
   return (
     <section className="px-4 pt-6 sm:px-5">
         <div className="scanlines mx-auto max-w-6xl rounded-page border-[1.5px] border-hairline bg-surface p-6 sm:p-10">
           <div className="flex flex-wrap items-center gap-3">
-            {/* Boot line keeps its typing animation (not inline-edited in this slice). */}
-            <BootLine text={hero.boot_line} />
+            {/* Boot line: editable text + optional blog link (typing animation preserved). */}
+            <BootLineEditable text={hero.boot_line} url={hero.boot_line_url} posts={posts} />
             <Editable
               field="home_hero.status_pill"
               className="mono-label rounded-pill bg-accent/10 px-3 py-1.5 text-accent-strong"

@@ -79,6 +79,8 @@ export interface Stats {
 /** Singleton page sections (JSON payloads). Loosely typed per-key. */
 export interface HeroSection {
   boot_line: string;
+  /** Optional link target for the boot line (e.g. a blog post) — editable. */
+  boot_line_url?: string | null;
   status_pill: string;
   name: string;
   tagline: string;

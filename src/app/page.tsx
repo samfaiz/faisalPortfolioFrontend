@@ -23,12 +23,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [hero, about, skills, projects, experiences, seo] = await Promise.all([
+  const [hero, about, skills, projects, experiences, posts, seo] = await Promise.all([
     api.hero(),
     api.about(),
     api.skills(),
     api.projects(),
     api.experiences(),
+    api.posts(),
     fetchPageSeo("home"),
   ]);
 
@@ -66,7 +67,7 @@ export default async function Home() {
     >
       <JsonLd data={jsonLd} />
       {/* ===== Hero (inline-editable) ===== */}
-      <EditableHero hero={hero} />
+      <EditableHero hero={hero} posts={posts.map((p) => ({ title: p.title, slug: p.slug }))} />
 
       {/* ===== Marquee ===== */}
       <section className="px-4 py-8 sm:px-5">
