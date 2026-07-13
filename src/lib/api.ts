@@ -40,7 +40,8 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
 export function mediaUrl(path?: string | null): string | null {
   if (!path) return null;
   if (/^https?:\/\//.test(path) || path.startsWith("//")) return path;
-  return `${BASE}/media/${path.replace(/^\/?(storage\/)?/, "")}`;
+  const clean = path.replace(/^\/?(storage\/)?/, "");
+  return `${BASE}/media?path=${encodeURIComponent(clean)}`;
 }
 
 /** Fetch JSON from the API; return `fb` on any failure. Cached + revalidated. */
