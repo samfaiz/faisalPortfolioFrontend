@@ -34,7 +34,8 @@ export default async function Home() {
     fetchPageSeo("home"),
   ]);
   const resumeHref = settings.resume_download ?? settings.resume_url ?? undefined;
-  const resumeView = settings.resume_url ?? settings.resume_download ?? undefined;
+  // View through the same-origin proxy so the iframe isn't blocked cross-subdomain.
+  const resumeView = resumeHref ? "/api/resume/view" : undefined;
 
   // Baseline structured data — always emitted, merged with any backend JSON-LD.
   const baselineLd: Record<string, unknown>[] = [
