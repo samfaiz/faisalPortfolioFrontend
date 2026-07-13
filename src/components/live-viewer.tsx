@@ -45,6 +45,7 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
   const [state, setState] = useState<LoadState>("loading");
   const [isFull, setIsFull] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track fullscreen so the body can flex to fill the screen instead of
@@ -54,6 +55,13 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
+
+  // Keep the active card centered in the horizontal (mobile) card strip.
+  useEffect(() => {
+    cardsRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [activeId]);
 
   const select = (p: Project) => {
     setActiveId(p.id);
@@ -83,6 +91,14 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
   const showLive = mode === "live";
   const liveBlocked = state === "blocked" || !active?.url || active?.allow_iframe === false;
 
+  // Position + prev/next so mobile users can tell there are multiple projects
+  // and cycle through them without hunting for the cards below the tall frame.
+  const activeIndex = Math.max(0, visible.findIndex((p) => p.id === active?.id));
+  const go = (dir: number) => {
+    if (visible.length < 2) return;
+    select(visible[(activeIndex + dir + visible.length) % visible.length]);
+  };
+
   return (
     <div>
       {/* Filter pills */}
@@ -109,11 +125,11 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
           isFull ? "h-screen w-screen rounded-none border-0" : "rounded-lg border-2"
         }`}
       >
-        {/* Header bar */}
-        <div className="flex items-center gap-3 border-b-[1.5px] border-hairline bg-surface-alt px-4 py-2.5">
-          <span className="text-accent" aria-hidden>●</span>
-          <span className="mono-label truncate text-muted">{domainOf(active?.url)}</span>
-          <span className="mono-label ml-auto hidden text-faint sm:inline">
+        {/* Header bar — compacts to icons on mobile so it never overflows */}
+        <div className="flex items-center gap-2 border-b-[1.5px] border-hairline bg-surface-alt px-3 py-2.5 sm:gap-3 sm:px-4">
+          <span className="shrink-0 text-accent" aria-hidden>●</span>
+          <span className="mono-label min-w-0 flex-1 truncate text-muted">{domainOf(active?.url)}</span>
+          <span className="mono-label hidden shrink-0 text-faint lg:inline">
             {showLive ? "RUNNING LIVE IN-PAGE" : "DEMO PREVIEW"}
           </span>
 
@@ -121,18 +137,28 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
           {hasPreview(active) && canFrame(active) && (
             <button
               onClick={() => (showLive ? setMode("preview") : runLive())}
-              className="mono-label rounded-pill border-[1.5px] border-hairline px-2.5 py-1 text-ink hover:border-ink"
+              className="mono-label shrink-0 rounded-pill border-[1.5px] border-hairline px-2.5 py-1 text-ink hover:border-ink"
             >
               {showLive ? "◀ PREVIEW" : "RUN LIVE ▸"}
             </button>
           )}
 
-          <button onClick={goFullscreen} className="mono-label rounded-pill border-[1.5px] border-hairline px-2.5 py-1 text-ink hover:border-ink">
-            FULLSCREEN ⤢
+          <button
+            onClick={goFullscreen}
+            title="Fullscreen"
+            className="mono-label shrink-0 rounded-pill border-[1.5px] border-hairline px-2.5 py-1 text-ink hover:border-ink"
+          >
+            <span className="hidden sm:inline">FULLSCREEN </span>⤢
           </button>
           {active?.url && (
-            <a href={active.url} target="_blank" rel="noopener noreferrer" className="mono-label rounded-pill border-[1.5px] border-hairline px-2.5 py-1 text-ink hover:border-ink">
-              OPEN TAB ↗
+            <a
+              href={active.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open in new tab"
+              className="mono-label shrink-0 rounded-pill border-[1.5px] border-hairline px-2.5 py-1 text-ink hover:border-ink"
+            >
+              <span className="hidden sm:inline">OPEN TAB </span>↗
             </a>
           )}
         </div>
@@ -172,15 +198,43 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
         </div>
       </div>
 
-      {/* Project cards */}
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
+      {/* Prev / next + counter — makes multiple projects obvious on mobile */}
+      {visible.length > 1 && (
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={() => go(-1)}
+            aria-label="Previous project"
+            className="mono-label grid size-9 shrink-0 place-items-center rounded-pill border-[1.5px] border-hairline text-ink transition-colors hover:border-ink"
+          >
+            ←
+          </button>
+          <span className="mono-label tabular-nums text-muted-2">
+            {activeIndex + 1} / {visible.length} PROJECTS
+          </span>
+          <button
+            onClick={() => go(1)}
+            aria-label="Next project"
+            className="mono-label grid size-9 shrink-0 place-items-center rounded-pill border-[1.5px] border-hairline text-ink transition-colors hover:border-ink"
+          >
+            →
+          </button>
+          <span className="mono-label ml-auto text-faint md:hidden">SWIPE →</span>
+        </div>
+      )}
+
+      {/* Project cards — horizontal swipe on mobile (next card peeks), grid on desktop */}
+      <div
+        ref={cardsRef}
+        className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 md:mt-5 md:grid md:grid-cols-3 md:overflow-visible md:pb-0"
+      >
         {visible.map((p) => {
           const isActive = p.id === active?.id;
           return (
             <button
               key={p.id}
+              data-active={isActive}
               onClick={() => select(p)}
-              className={`rounded-md border-[1.5px] p-4 text-left transition-colors ${
+              className={`w-[82%] shrink-0 snap-center rounded-md border-[1.5px] p-4 text-left transition-colors md:w-auto md:shrink ${
                 isActive
                   ? "border-accent bg-accent/10"
                   : "border-hairline bg-surface hover:border-ink"
