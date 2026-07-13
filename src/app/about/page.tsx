@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { JsonLd } from "@/components/json-ld";
-import { fallback } from "@/lib/api";
+import { ResumeActions } from "@/components/resume-actions";
+import { api, fallback } from "@/lib/api";
 import { buildMetadata, faqJsonLd, fetchPageSeo } from "@/lib/seo";
 
 const fallbackMeta = {
@@ -24,7 +25,7 @@ const cards = [
 
 export default async function AboutPage() {
   const { aboutIntro } = fallback;
-  const seo = await fetchPageSeo("about");
+  const [settings, seo] = await Promise.all([api.settings(), fetchPageSeo("about")]);
   const faq = faqJsonLd(seo?.faq);
   return (
     <>
@@ -68,9 +69,9 @@ export default async function AboutPage() {
       <section className="px-4 pb-4 sm:px-5">
         <div className="scanlines mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 rounded-page bg-panel p-8 text-on-dark">
           <p className="font-display text-xl font-semibold">Curious how I work? See the projects.</p>
-          <div className="flex gap-3">
-            <Link href="/projects" className="mono-label rounded-pill bg-accent px-4 py-2.5 font-semibold text-paper">PROJECTS →</Link>
-            <a href="/resume.pdf" className="mono-label rounded-pill border border-on-dark-faint/40 px-4 py-2.5 text-on-dark">RESUME ↓</a>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/projects" className="mono-label rounded-pill border border-on-dark-faint/40 px-4 py-2.5 text-on-dark transition-colors hover:border-accent-soft">PROJECTS →</Link>
+            <ResumeActions settings={settings} variant="dark" />
           </div>
         </div>
       </section>

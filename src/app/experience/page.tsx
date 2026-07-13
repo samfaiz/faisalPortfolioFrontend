@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { JsonLd } from "@/components/json-ld";
+import { ResumeActions } from "@/components/resume-actions";
 import { api } from "@/lib/api";
 import { buildMetadata, faqJsonLd, fetchPageSeo } from "@/lib/seo";
 
@@ -15,10 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ExperiencePage() {
-  const [experiences, certifications, stats, seo] = await Promise.all([
+  const [experiences, certifications, stats, settings, seo] = await Promise.all([
     api.experiences(),
     api.certifications(),
     api.stats(),
+    api.settings(),
     fetchPageSeo("experience"),
   ]);
   const faq = faqJsonLd(seo?.faq);
@@ -31,11 +33,7 @@ export default async function ExperiencePage() {
         line1="THE TRACK"
         line2="RECORD."
         breadcrumb="~/experience"
-        action={
-          <a href="/resume.pdf" className="mono-label rounded-pill bg-ink px-4 py-2.5 font-semibold text-paper">
-            DOWNLOAD RESUME ↓
-          </a>
-        }
+        action={<ResumeActions settings={settings} variant="light" />}
       />
 
       <section className="px-4 py-10 sm:px-5">

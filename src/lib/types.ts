@@ -135,4 +135,7 @@ export interface SiteSettings {
   };
   logo: string | null;
   og_image: string | null;
+  /** Resume: view opens the PDF inline; download forces a file download. */
+  resume_url: string | null;
+  resume_download: string | null;
 }

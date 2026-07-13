@@ -26,6 +26,8 @@ const settingsFallback: SiteSettings = {
   seo: { title_suffix: "— Faisal Khan", robots_default: "index,follow", sitemap_enabled: true },
   logo: null,
   og_image: null,
+  resume_url: null,
+  resume_download: null,
 };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
