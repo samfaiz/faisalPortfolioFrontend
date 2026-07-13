@@ -46,6 +46,7 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
   const [isFull, setIsFull] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const cardsMounted = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track fullscreen so the body can flex to fill the screen instead of
@@ -56,11 +57,22 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
-  // Keep the active card centered in the horizontal (mobile) card strip.
+  // Center the active card in the horizontal (mobile) card strip — scrolling
+  // ONLY that strip, never the page. Skips the first render so loading the page
+  // doesn't jump down to the projects section.
   useEffect(() => {
-    cardsRef.current
-      ?.querySelector<HTMLElement>('[data-active="true"]')
-      ?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    if (!cardsMounted.current) {
+      cardsMounted.current = true;
+      return;
+    }
+    const container = cardsRef.current;
+    const el = container?.querySelector<HTMLElement>('[data-active="true"]');
+    if (!container || !el) return;
+    const delta =
+      el.getBoundingClientRect().left -
+      container.getBoundingClientRect().left -
+      (container.clientWidth - el.clientWidth) / 2;
+    container.scrollBy({ left: delta, behavior: "smooth" });
   }, [activeId]);
 
   const select = (p: Project) => {

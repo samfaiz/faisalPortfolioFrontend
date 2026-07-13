@@ -32,6 +32,16 @@ const settingsFallback: SiteSettings = {
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
 
+/** Backend origin (for /storage assets), derived from the API base. */
+const API_ORIGIN = BASE.replace(/\/api\/v1\/?$/, "");
+
+/** Resolve a backend storage path to an absolute URL; pass real URLs through. */
+export function mediaUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//.test(path) || path.startsWith("//")) return path;
+  return `${API_ORIGIN}/storage/${path.replace(/^\/?(storage\/)?/, "")}`;
+}
+
 /** Fetch JSON from the API; return `fb` on any failure. Cached + revalidated. */
 async function get<T>(path: string, fb: T): Promise<T> {
   try {
@@ -67,6 +77,7 @@ export const api = {
   certifications: () => get<Certification[]>("/certifications", fallback.certifications),
   stats: () => get<Stats>("/stats", fallback.stats),
   settings: () => get<SiteSettings>("/settings", settingsFallback),
+  aboutPage: () => get<{ photo?: string | null }>("/sections/about", { photo: null }),
 };
 
 export { fallback };

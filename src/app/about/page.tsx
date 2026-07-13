@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { JsonLd } from "@/components/json-ld";
 import { ResumeActions } from "@/components/resume-actions";
-import { api, fallback } from "@/lib/api";
+import { api, fallback, mediaUrl } from "@/lib/api";
 import { buildMetadata, faqJsonLd, fetchPageSeo } from "@/lib/seo";
 
 const fallbackMeta = {
@@ -25,7 +25,12 @@ const cards = [
 
 export default async function AboutPage() {
   const { aboutIntro } = fallback;
-  const [settings, seo] = await Promise.all([api.settings(), fetchPageSeo("about")]);
+  const [aboutData, settings, seo] = await Promise.all([
+    api.aboutPage(),
+    api.settings(),
+    fetchPageSeo("about"),
+  ]);
+  const photo = mediaUrl(aboutData.photo);
   const faq = faqJsonLd(seo?.faq);
   return (
     <>
@@ -37,7 +42,12 @@ export default async function AboutPage() {
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[380px_1fr]">
           {/* Photo card */}
           <div className="shadow-offset self-start rounded-lg border-2 border-ink bg-surface p-3">
-            <div className="stripes aspect-[3/4] w-full rounded-md" />
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="Faisal Khan" className="aspect-[3/4] w-full rounded-md object-cover" />
+            ) : (
+              <div className="stripes aspect-[3/4] w-full rounded-md" />
+            )}
             <div className="mono-label mt-3 flex items-center justify-between px-1 text-muted-2">
               <span>faisal_khan.jpg</span>
               <span className="text-accent">● DXB</span>

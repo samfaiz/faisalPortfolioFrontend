@@ -11,9 +11,22 @@
 import { Editable } from "@/components/editor/Editable";
 import { EditableImage } from "@/components/editor/EditableImage";
 import { BootLineEditable, type BootLinePost } from "@/components/boot-line-editable";
+import { ResumeViewer } from "@/components/resume-viewer";
 import type { HeroSection } from "@/lib/types";
 
-export function EditableHero({ hero, posts = [] }: { hero: HeroSection; posts?: BootLinePost[] }) {
+export function EditableHero({
+  hero,
+  posts = [],
+  resumeHref,
+  resumeView,
+}: {
+  hero: HeroSection;
+  posts?: BootLinePost[];
+  /** When a resume is uploaded, the secondary CTA ("RESUME") downloads it. */
+  resumeHref?: string;
+  /** Inline-view URL for the resume — shown as the eye button. */
+  resumeView?: string;
+}) {
   return (
     <section className="px-4 pt-6 sm:px-5">
         <div className="scanlines mx-auto max-w-6xl rounded-page border-[1.5px] border-hairline bg-surface p-6 sm:p-10">
@@ -51,20 +64,23 @@ export function EditableHero({ hero, posts = [] }: { hero: HeroSection; posts?: 
             <Editable field="home_hero.footnote.2" as="p" className="mono-label text-muted-2" />
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="hidden h-0.5 flex-1 bg-ink sm:block" />
             <Editable
               field="home_hero.cta_primary.label"
               as="a"
               href={hero.cta_primary.href}
-              className="mono-label rounded-pill bg-ink px-5 py-3 font-semibold text-paper transition-opacity hover:opacity-90"
+              className="mono-label rounded-pill bg-ink px-4 py-2.5 font-semibold text-paper transition-opacity hover:opacity-90 sm:px-5 sm:py-3"
             />
-            <Editable
-              field="home_hero.cta_secondary.label"
-              as="a"
-              href={hero.cta_secondary.href}
-              className="mono-label rounded-pill border-[1.5px] border-ink px-5 py-3 font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
-            />
+            <div className="flex items-center gap-2">
+              <Editable
+                field="home_hero.cta_secondary.label"
+                as="a"
+                href={resumeHref ?? hero.cta_secondary.href}
+                className="mono-label rounded-pill border-[1.5px] border-ink px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-ink hover:text-paper sm:px-5 sm:py-3"
+              />
+              {resumeView && <ResumeViewer viewUrl={resumeView} downloadUrl={resumeHref} />}
+            </div>
           </div>
         </div>
     </section>

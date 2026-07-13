@@ -23,15 +23,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [hero, about, skills, projects, experiences, posts, seo] = await Promise.all([
+  const [hero, about, skills, projects, experiences, posts, settings, seo] = await Promise.all([
     api.hero(),
     api.about(),
     api.skills(),
     api.projects(),
     api.experiences(),
     api.posts(),
+    api.settings(),
     fetchPageSeo("home"),
   ]);
+  const resumeHref = settings.resume_download ?? settings.resume_url ?? undefined;
+  const resumeView = settings.resume_url ?? settings.resume_download ?? undefined;
 
   // Baseline structured data — always emitted, merged with any backend JSON-LD.
   const baselineLd: Record<string, unknown>[] = [
@@ -67,7 +70,12 @@ export default async function Home() {
     >
       <JsonLd data={jsonLd} />
       {/* ===== Hero (inline-editable) ===== */}
-      <EditableHero hero={hero} posts={posts.map((p) => ({ title: p.title, slug: p.slug }))} />
+      <EditableHero
+        hero={hero}
+        posts={posts.map((p) => ({ title: p.title, slug: p.slug }))}
+        resumeHref={resumeHref}
+        resumeView={resumeView}
+      />
 
       {/* ===== Marquee ===== */}
       <section className="px-4 py-8 sm:px-5">
