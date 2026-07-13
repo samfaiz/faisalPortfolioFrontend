@@ -32,14 +32,15 @@ const settingsFallback: SiteSettings = {
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
 
-/** Backend origin (for /storage assets), derived from the API base. */
-const API_ORIGIN = BASE.replace(/\/api\/v1\/?$/, "");
-
-/** Resolve a backend storage path to an absolute URL; pass real URLs through. */
+/**
+ * Resolve a stored upload path to a servable URL. Goes through the app's media
+ * endpoint (not /storage) because nginx won't serve the storage symlink. Real
+ * URLs pass through unchanged.
+ */
 export function mediaUrl(path?: string | null): string | null {
   if (!path) return null;
   if (/^https?:\/\//.test(path) || path.startsWith("//")) return path;
-  return `${API_ORIGIN}/storage/${path.replace(/^\/?(storage\/)?/, "")}`;
+  return `${BASE}/media/${path.replace(/^\/?(storage\/)?/, "")}`;
 }
 
 /** Fetch JSON from the API; return `fb` on any failure. Cached + revalidated. */
