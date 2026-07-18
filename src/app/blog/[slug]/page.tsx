@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, mediaUrl } from "@/lib/api";
 import { JsonLd } from "@/components/json-ld";
 import { buildMetadata, faqJsonLd } from "@/lib/seo";
+import { enrichArticle, articleJsonLd, breadcrumbJsonLd } from "@/lib/article";
+
+const SITE_URL = "https://faisalkhan.dev";
 
 export async function generateMetadata(props: PageProps<"/blog/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
@@ -17,20 +20,22 @@ export default async function PostPage(props: PageProps<"/blog/[slug]">) {
   const post = await api.post(slug);
   if (!post) notFound();
 
-  const articleLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
-    description: post.excerpt,
-    datePublished: post.published_at,
-    author: { "@type": "Person", name: post.author?.name ?? "Faisal Khan" },
-  };
+  const url = `${SITE_URL}/blog/${post.slug}`;
+  const image = mediaUrl(post.cover?.url ?? null);
+  const { html, toc } = enrichArticle(post.body_html ?? "");
+
   const faq = faqJsonLd(post.seo?.faq);
   const jsonLd = [
-    articleLd,
+    articleJsonLd(post, { url, siteUrl: SITE_URL, image }),
+    breadcrumbJsonLd(post, SITE_URL),
     ...(post.seo?.json_ld ?? []),
     ...(faq ? [faq] : []),
   ];
+
+  const published = post.published_at
+    ? new Date(post.published_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : null;
+  const author = post.author?.name ?? "Faisal Khan";
 
   return (
     <article className="px-4 py-10 sm:px-5">
@@ -50,9 +55,43 @@ export default async function PostPage(props: PageProps<"/blog/[slug]">) {
         </h1>
         <p className="mt-4 text-[19px] leading-[1.7] text-muted">{post.excerpt}</p>
 
-        <div className="mt-8 border-t border-divider pt-8 text-[15px] leading-[1.85] text-muted">
-          {post.body_html ? (
-            <div dangerouslySetInnerHTML={{ __html: post.body_html }} />
+        {/* E-E-A-T byline: who wrote it, their authority, when */}
+        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-divider pt-5 text-sm text-muted">
+          <span className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-full bg-accent/15 text-xs font-semibold text-accent-strong">FK</span>
+            <span className="font-medium text-ink">{author}</span>
+          </span>
+          <span className="text-faint">Cyber Security Analyst</span>
+          {published && <span className="text-faint">· {published}</span>}
+        </div>
+
+        {image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            alt={post.cover?.alt ?? post.title}
+            className="mt-6 max-h-105 w-full rounded-lg border border-hairline object-cover"
+          />
+        )}
+
+        {toc.length >= 3 && (
+          <nav className="mt-8 rounded-lg border border-hairline bg-surface p-4">
+            <div className="mono-label text-faint">ON THIS PAGE</div>
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {toc.map((t) => (
+                <li key={t.id}>
+                  <a href={`#${t.id}`} className="text-muted transition-colors hover:text-accent-strong">
+                    {t.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+
+        <div className="mt-8 border-t border-divider pt-8">
+          {html ? (
+            <div className="article-body" dangerouslySetInnerHTML={{ __html: html }} />
           ) : (
             <p className="mono-label text-faint">
               // full article content will be served from the CMS once published.
