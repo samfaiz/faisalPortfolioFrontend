@@ -9,6 +9,7 @@ import type { Post } from "./types";
 export interface TocItem {
   id: string;
   text: string;
+  level: 2 | 3;
 }
 
 function slugify(s: string): string {
@@ -24,27 +25,32 @@ function slugify(s: string): string {
 }
 
 /**
- * Inject stable `id`s into every <h2> and collect them as a table of contents,
- * so headings are linkable and a TOC can render. De-dupes repeated headings.
+ * Inject stable `id`s into every <h2> and <h3> and collect them as a table of
+ * contents, so headings are linkable and a nested TOC can render. De-dupes
+ * repeated headings.
  */
 export function enrichArticle(html: string): { html: string; toc: TocItem[] } {
   const toc: TocItem[] = [];
   const seen = new Set<string>();
 
-  const out = html.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/gi, (_m, attrs: string | undefined, inner: string) => {
-    const text = inner.replace(/<[^>]+>/g, "").trim();
-    if (!text) return `<h2${attrs ?? ""}>${inner}</h2>`;
+  const out = html.replace(
+    /<h([23])(\s[^>]*)?>([\s\S]*?)<\/h\1>/gi,
+    (_m, tag: string, attrs: string | undefined, inner: string) => {
+      const level = tag === "3" ? 3 : 2;
+      const text = inner.replace(/<[^>]+>/g, "").trim();
+      if (!text) return `<h${tag}${attrs ?? ""}>${inner}</h${tag}>`;
 
-    const base = slugify(text);
-    let id = base;
-    let n = 2;
-    while (seen.has(id)) id = `${base}-${n++}`;
-    seen.add(id);
-    toc.push({ id, text });
+      const base = slugify(text);
+      let id = base;
+      let n = 2;
+      while (seen.has(id)) id = `${base}-${n++}`;
+      seen.add(id);
+      toc.push({ id, text, level });
 
-    const cleaned = (attrs ?? "").replace(/\sid=("[^"]*"|'[^']*')/i, "");
-    return `<h2${cleaned} id="${id}">${inner}</h2>`;
-  });
+      const cleaned = (attrs ?? "").replace(/\sid=("[^"]*"|'[^']*')/i, "");
+      return `<h${tag}${cleaned} id="${id}">${inner}</h${tag}>`;
+    },
+  );
 
   return { html: out, toc };
 }

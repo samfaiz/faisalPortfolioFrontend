@@ -7,6 +7,7 @@
  * experience, blog. Post SEO ships on the post detail response (`post.seo`).
  */
 import type { Metadata } from "next";
+import { mediaUrl } from "./api";
 
 export interface Seo {
   meta_title: string | null;
@@ -46,11 +47,12 @@ export async function fetchPageSeo(key: string): Promise<Seo | null> {
 
 /**
  * Map a `Seo` object (or null) to Next.js `Metadata`, using `fallback` text
- * whenever a field is missing. Safe to call with `null`.
+ * (and optional fallback image) whenever a field is missing. Emits Open Graph
+ * and Twitter/X (`summary_large_image`) cards. Safe to call with `null`.
  */
 export function buildMetadata(
   seo: Seo | null,
-  fallback: { title: string; description: string },
+  fallback: { title: string; description: string; image?: string | null },
 ): Metadata {
   const title = seo?.meta_title || fallback.title;
   const description = seo?.meta_description || fallback.description;
@@ -79,10 +81,23 @@ export function buildMetadata(
   }
 
   const og = (seo?.og ?? {}) as { title?: string; description?: string; image?: string };
+  const ogTitle = og.title || title;
+  const ogDescription = og.description || description;
+  // A CMS og.image is a stored path — resolve it through the media endpoint;
+  // the fallback image is already an absolute URL.
+  const image = mediaUrl(og.image ?? null) || fallback.image || null;
+
   metadata.openGraph = {
-    title: og.title || title,
-    description: og.description || description,
-    ...(og.image ? { images: [og.image] } : {}),
+    title: ogTitle,
+    description: ogDescription,
+    ...(image ? { images: [image] } : {}),
+  };
+
+  metadata.twitter = {
+    card: "summary_large_image",
+    title: ogTitle,
+    description: ogDescription,
+    ...(image ? { images: [image] } : {}),
   };
 
   return metadata;

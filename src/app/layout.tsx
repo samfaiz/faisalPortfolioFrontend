@@ -4,7 +4,7 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { EditTokenBridge } from "@/components/edit-token-bridge";
-import { api } from "@/lib/api";
+import { api, mediaUrl } from "@/lib/api";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -18,21 +18,35 @@ const jetBrainsMono = JetBrains_Mono({
   weight: ["400", "500", "600"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://faisalkhan.dev"),
-  title: {
-    default: "Faisal Khan — Cyber Security Analyst",
-    template: "%s — Faisal Khan",
-  },
-  description:
-    "Faisal Khan — Cyber Security Analyst who builds full-stack products with AI. Threat detection, incident response, and shipped software.",
-  openGraph: {
-    title: "Faisal Khan — Cyber Security Analyst",
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await api.settings();
+  const ogImage = mediaUrl(settings.og_image ?? null);
+  const title = "Faisal Khan — Cyber Security Analyst";
+  const description =
+    "Cyber Security Analyst who builds full-stack products with AI.";
+
+  return {
+    metadataBase: new URL("https://faisalkhan.dev"),
+    title: {
+      default: "Faisal Khan — Cyber Security Analyst",
+      template: "%s — Faisal Khan",
+    },
     description:
-      "Cyber Security Analyst who builds full-stack products with AI.",
-    type: "website",
-  },
-};
+      "Faisal Khan — Cyber Security Analyst who builds full-stack products with AI. Threat detection, incident response, and shipped software.",
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+  };
+}
 
 /**
  * Set theme before paint to avoid a light/dark flash. A visitor's saved choice

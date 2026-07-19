@@ -32,6 +32,7 @@ export interface Project {
   thumbnail?: MediaRef | null;
   featured: boolean;
   order: number;
+  seo?: Seo | null;
 }
 
 export interface Post {

@@ -12,7 +12,11 @@ export async function generateMetadata(props: PageProps<"/blog/[slug]">): Promis
   const { slug } = await props.params;
   const post = await api.post(slug);
   if (!post) return { title: "Post not found" };
-  return buildMetadata(post.seo ?? null, { title: post.title, description: post.excerpt });
+  return buildMetadata(post.seo ?? null, {
+    title: post.title,
+    description: post.excerpt,
+    image: mediaUrl(post.cover?.url ?? null),
+  });
 }
 
 export default async function PostPage(props: PageProps<"/blog/[slug]">) {
@@ -79,7 +83,7 @@ export default async function PostPage(props: PageProps<"/blog/[slug]">) {
             <div className="mono-label text-faint">ON THIS PAGE</div>
             <ul className="mt-2 space-y-1.5 text-sm">
               {toc.map((t) => (
-                <li key={t.id}>
+                <li key={t.id} className={t.level === 3 ? "pl-4" : undefined}>
                   <a href={`#${t.id}`} className="text-muted transition-colors hover:text-accent-strong">
                     {t.text}
                   </a>

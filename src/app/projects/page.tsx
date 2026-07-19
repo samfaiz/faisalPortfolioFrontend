@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { LiveViewer } from "@/components/live-viewer";
 import { JsonLd } from "@/components/json-ld";
@@ -26,6 +27,24 @@ export default async function ProjectsPage() {
       <section className="px-4 py-10 sm:px-5">
         <div className="mx-auto max-w-6xl">
           <LiveViewer projects={projects} />
+
+          {projects.length > 0 && (
+            <nav className="mt-8 border-t border-divider pt-6">
+              <div className="mono-label text-faint">FULL PROJECT PAGES</div>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {projects.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/projects/${p.slug}`}
+                      className="mono-label rounded-pill border-[1.5px] border-hairline px-3 py-1.5 text-muted-2 transition-colors hover:border-ink hover:text-ink"
+                    >
+                      {p.title} ↗
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
         </div>
       </section>
     </>

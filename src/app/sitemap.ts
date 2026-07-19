@@ -16,9 +16,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: p.published_at ? new Date(p.published_at) : new Date(),
   }));
 
-  // Projects are showcased on /projects; include their slugs as anchors is not
-  // meaningful for crawlers, so we only expose the section pages + posts.
-  void projects;
+  const projectRoutes = projects.map((p) => ({
+    url: `${SITE}/projects/${p.slug}`,
+    lastModified: new Date(),
+  }));
 
-  return [...staticRoutes, ...postRoutes];
+  return [...staticRoutes, ...postRoutes, ...projectRoutes];
 }
