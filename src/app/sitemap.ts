@@ -6,7 +6,7 @@ const SITE = "https://faisalkhan.dev";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [projects, posts] = await Promise.all([api.projects(), api.posts()]);
 
-  const staticRoutes = ["", "/about", "/projects", "/experience", "/blog"].map((path) => ({
+  const staticRoutes = ["", "/about", "/projects", "/experience", "/blog", "/soc-prep"].map((path) => ({
     url: `${SITE}${path}`,
     lastModified: new Date(),
   }));

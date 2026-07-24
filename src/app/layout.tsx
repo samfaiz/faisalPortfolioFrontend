@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/nav";
-import { Footer } from "@/components/footer";
-import { EditTokenBridge } from "@/components/edit-token-bridge";
 import { api, mediaUrl } from "@/lib/api";
 
 const spaceGrotesk = Space_Grotesk({
@@ -65,7 +62,7 @@ const themeScript = (fallbackTheme: string) => `
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [site, settings] = await Promise.all([api.site(), api.settings()]);
+  const settings = await api.settings();
   const accent = settings.theme?.accent?.trim();
 
   return (
@@ -85,12 +82,7 @@ export default async function RootLayout({
           <style dangerouslySetInnerHTML={{ __html: `:root,.dark{--accent:${accent};}` }} />
         ) : null}
       </head>
-      <body className="min-h-full bg-paper text-ink">
-        <EditTokenBridge />
-        <Nav wordmark={site.wordmark} logo={settings.logo ?? site.logo ?? null} />
-        <main>{children}</main>
-        <Footer site={site} />
-      </body>
+      <body className="min-h-full bg-paper text-ink">{children}</body>
     </html>
   );
 }

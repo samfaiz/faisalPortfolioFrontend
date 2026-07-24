@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* Manual (class-based) dark mode: toggling `.dark` on <html> flips tokens. */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -29,6 +31,35 @@
   --on-dark-faint: #8a8d82;
 
   --scanline: rgba(21, 23, 15, 0.02);
+
+  /* SOC-prep tier colours (L1 amber / L2 steel blue / L3 violet), tuned for
+     readable text on the light paper background. */
+  --soc-l1: oklch(0.55 0.12 70);
+  --soc-l2: oklch(0.5 0.09 230);
+  --soc-l3: oklch(0.5 0.14 310);
+
+  /*
+    shadcn/ui semantic tokens, mapped onto the Ledger design system above so
+    every shadcn component automatically matches the site (and flips with .dark
+    for free, since these reference vars that are overridden in .dark).
+  */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--surface-alt);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted-2);
+  --accent-foreground: var(--paper);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--accent);
+  --radius: 0.625rem;
 }
 
 .dark {
@@ -52,6 +83,14 @@
   --on-dark-faint: #8a8d82;
 
   --scanline: rgba(250, 249, 245, 0.02);
+
+  --soc-l1: oklch(0.78 0.12 75);
+  --soc-l2: oklch(0.75 0.09 230);
+  --soc-l3: oklch(0.74 0.12 310);
+
+  /* shadcn tokens are var() references to the Ledger tokens (see :root), so
+     they flip automatically in dark mode. Only literal values need overriding. */
+  --destructive: oklch(0.704 0.191 22.216);
 }
 
 @theme inline {
@@ -80,6 +119,28 @@
   --radius-md: 16px;
   --radius-sm: 11px;
   --radius-page: 24px;
+  --font-heading: var(--font-display);
+  --font-sans: var(--font-display);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
@@ -96,6 +157,9 @@
   ::selection {
     background: var(--accent);
     color: var(--paper);
+  }
+  * {
+    @apply border-border outline-ring/50;
   }
 }
 
@@ -292,5 +356,203 @@
     max-width: 100%;
     height: auto;
     border-radius: 10px;
+  }
+}
+
+/* ============================================================
+   SOC PREP (/soc-prep) — standalone interview-prep tool page.
+   Reading-size vars live on .soc-page; long-form content coming
+   from the kit's HTML strings renders inside .soc-prose.
+   ============================================================ */
+@layer components {
+  .soc-page {
+    --soc-fs: 15px;
+    --soc-lh: 1.78;
+    --soc-measure: 74ch;
+  }
+  .soc-page[data-size="lg"] {
+    --soc-fs: 16.5px;
+    --soc-lh: 1.85;
+    --soc-measure: 78ch;
+  }
+  .soc-page[data-size="xl"] {
+    --soc-fs: 18px;
+    --soc-lh: 1.95;
+    --soc-measure: 82ch;
+  }
+
+  /* shadcn Accordion contents are forceMounted so the full kit is in the
+     SSR HTML (SEO) and printable; hide them visually while closed. */
+  .soc-page [data-slot="accordion-content"][data-state="closed"] {
+    display: none;
+  }
+
+  .soc-prose {
+    font-size: var(--soc-fs);
+    line-height: var(--soc-lh);
+    color: var(--muted);
+  }
+  .soc-prose p,
+  .soc-prose li {
+    max-width: var(--soc-measure);
+  }
+  .soc-prose p {
+    margin-bottom: 0.9em;
+  }
+  .soc-prose p:last-child {
+    margin-bottom: 0;
+  }
+  .soc-prose ul,
+  .soc-prose ol {
+    padding-left: 1.4em;
+    margin-bottom: 0.9em;
+  }
+  .soc-prose ul {
+    list-style: disc;
+  }
+  .soc-prose ol {
+    list-style: decimal;
+  }
+  .soc-prose li {
+    margin-bottom: 0.55em;
+  }
+  .soc-prose li::marker {
+    color: var(--faint);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+  .soc-prose b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .soc-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--surface-alt);
+    border: 1px solid var(--divider);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    color: var(--accent-strong);
+  }
+  .soc-prose pre {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.65;
+    background: var(--panel);
+    color: var(--on-dark);
+    border-left: 2px solid var(--accent);
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    overflow-x: auto;
+    margin: 0 0 0.9em;
+    white-space: pre;
+  }
+  .soc-prose pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  /* "Say this in the interview" callout used by malware topics. */
+  .soc-prose .say {
+    border-left: 2px solid var(--accent);
+    background: var(--surface-alt);
+    padding: 0.85rem 1rem;
+    border-radius: 0 10px 10px 0;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .soc-prose .warn {
+    color: var(--soc-l1);
+    font-weight: 600;
+  }
+  .soc-prose table.tbl {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 0.35rem 0 1rem;
+    font-size: 0.84rem;
+    max-width: 100%;
+  }
+  .soc-prose table.tbl th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1.5px solid var(--hairline);
+    white-space: nowrap;
+  }
+  .soc-prose table.tbl td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--divider);
+    color: var(--muted);
+    vertical-align: top;
+    min-width: 130px;
+  }
+  .soc-prose table.tbl td b {
+    color: var(--ink);
+  }
+
+  /* Numbered responsibilities in role cards (01, 02, …). Selectors carry
+     .soc-prose so they outrank the generic .soc-prose ol/li rules above. */
+  .soc-prose .soc-steps {
+    list-style: none;
+    counter-reset: soc-step;
+    padding-left: 0;
+  }
+  .soc-prose .soc-steps li {
+    counter-increment: soc-step;
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 0.65em;
+    max-width: var(--soc-measure);
+  }
+  .soc-prose .soc-steps li::before {
+    content: counter(soc-step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.28em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--faint);
+  }
+}
+
+/* Smooth in-page anchor jumps (soc-prep section nav, /#hire, blog TOC). */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media print {
+  .soc-noprint {
+    display: none !important;
+  }
+  .soc-page [data-slot="accordion-content"][data-state="closed"] {
+    display: block !important;
+  }
+  .soc-page {
+    --soc-fs: 10.5pt;
+    --soc-lh: 1.5;
+    --soc-measure: 100%;
+  }
+  .soc-page section {
+    break-before: page;
+  }
+  .soc-page section:first-of-type {
+    break-before: avoid;
+  }
+  .soc-card {
+    break-inside: avoid;
+  }
+  .soc-page a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    color: var(--muted-2);
   }
 }
