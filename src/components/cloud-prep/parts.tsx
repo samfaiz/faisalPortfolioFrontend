@@ -1,0 +1,520 @@
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  CERT_NAMES,
+  PROVIDER_NAMES,
+  PROVIDER_ORDER,
+  TIER_NAMES,
+  type AttackPath,
+  type Cert,
+  type Fundamental,
+  type Playbook,
+  type Provider,
+  type Role,
+  type Scenario,
+  type Severity,
+  type Tactic,
+  type Tier,
+} from "@/lib/cloud-prep/data";
+import { ListenButton, plainText } from "@/components/soc-prep/speech";
+
+const TIER_TINT: Record<Tier, string> = {
+  associate: "bg-(--cloud-associate)/15 text-(--cloud-associate)",
+  engineer: "bg-(--cloud-engineer)/15 text-(--cloud-engineer)",
+  architect: "bg-(--cloud-architect)/15 text-(--cloud-architect)",
+};
+const TIER_SOLID: Record<Tier, string> = {
+  associate: "bg-(--cloud-associate)",
+  engineer: "bg-(--cloud-engineer)",
+  architect: "bg-(--cloud-architect)",
+};
+const PROVIDER_TINT: Record<Provider, string> = {
+  aws: "bg-(--cloud-aws)/15 text-(--cloud-aws)",
+  azure: "bg-(--cloud-azure)/15 text-(--cloud-azure)",
+  gcp: "bg-(--cloud-gcp)/15 text-(--cloud-gcp)",
+};
+const PROVIDER_DOT: Record<Provider, string> = {
+  aws: "bg-(--cloud-aws)",
+  azure: "bg-(--cloud-azure)",
+  gcp: "bg-(--cloud-gcp)",
+};
+
+const chip =
+  "rounded-pill border-transparent px-2 font-mono text-[9.5px] font-bold tracking-[0.1em]";
+
+export function TierBadge({ tier }: { tier: Tier }) {
+  return <Badge className={cn(chip, TIER_TINT[tier])}>{TIER_NAMES[tier].toUpperCase()}</Badge>;
+}
+
+export function ProviderBadge({ provider }: { provider: Provider }) {
+  return <Badge className={cn(chip, PROVIDER_TINT[provider])}>{PROVIDER_NAMES[provider]}</Badge>;
+}
+
+export function CertTags({ certs }: { certs: Cert[] }) {
+  if (!certs.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {certs.map((c) => (
+        <span
+          key={c}
+          className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.08em] text-muted-2"
+        >
+          {CERT_NAMES[c]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function BlockHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mono-label flex items-center gap-2.5 text-accent-strong after:h-px after:flex-1 after:bg-divider">
+      {children}
+    </div>
+  );
+}
+
+function Html({ className, html }: { className?: string; html: string }) {
+  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+const itemClass =
+  "soc-card mb-2 overflow-hidden rounded-md border-[1.5px] border-hairline bg-surface transition-colors not-last:border-b-[1.5px] data-open:border-ink";
+const triggerClass =
+  "flex-wrap items-center gap-x-3 gap-y-1.5 rounded-none border-transparent p-4 no-underline transition-colors hover:no-underline hover:bg-surface-alt/60 sm:px-5";
+const contentClass = "border-t border-divider px-4 pt-4 pb-5 sm:px-5";
+
+/** Which provider blocks to show given the active provider filter. */
+function shownProviders(f: Fundamental, filter: Provider | "all"): Provider[] {
+  const available = PROVIDER_ORDER.filter((p) => f.providers[p]);
+  if (filter === "all") return available;
+  return available.filter((p) => p === filter);
+}
+
+function fundamentalReadText(f: Fundamental, providers: Provider[]): string {
+  return [
+    f.title,
+    "The concept. " + plainText(f.concept),
+    ...providers.map((p) => `On ${PROVIDER_NAMES[p]}. ` + plainText(f.providers[p] ?? "")),
+  ]
+    .filter(Boolean)
+    .join(". ");
+}
+
+export function FundamentalCard({
+  fundamental: f,
+  index,
+  providerFilter,
+}: {
+  fundamental: Fundamental;
+  index: number;
+  providerFilter: Provider | "all";
+}) {
+  const providers = shownProviders(f, providerFilter);
+  return (
+    <AccordionItem value={`cf-${index}`} id={`item-cf-${index}`} className={itemClass}>
+      <AccordionTrigger className={cn(triggerClass, "py-3.5")}>
+        <TierBadge tier={f.tier} />
+        <span className="order-last w-full text-[14.5px] font-medium tracking-[-0.01em] text-ink sm:order-none sm:w-auto sm:flex-1">
+          {f.title}
+        </span>
+        <span className="mono-label hidden text-faint lg:inline">{f.category}</span>
+      </AccordionTrigger>
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex items-center justify-between gap-2">
+          <CertTags certs={f.certs} />
+          <ListenButton
+            id={`cf-${index}`}
+            title={f.title}
+            kind="Cloud fundamental"
+            getText={() => fundamentalReadText(f, providers)}
+          />
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <BlockHeading>Concept</BlockHeading>
+            <Html className="soc-prose" html={f.concept} />
+          </div>
+
+          {providers.map((p) => (
+            <div key={p} className="space-y-2">
+              <div className="mono-label flex items-center gap-2 text-muted-2">
+                <span aria-hidden className={cn("size-2 rounded-full", PROVIDER_DOT[p])} />
+                {PROVIDER_NAMES[p]}
+              </div>
+              <Html className="soc-prose" html={f.providers[p] ?? ""} />
+            </div>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+const SEVERITY_TINT: Record<Severity, string> = {
+  high: "bg-destructive/10 text-destructive",
+  med: "bg-(--soc-l1)/15 text-(--soc-l1)",
+  low: "bg-accent/15 text-accent-strong",
+};
+const SEVERITY_LABEL: Record<Severity, string> = { high: "HIGH", med: "MED", low: "LOW" };
+
+export function SeverityBadge({ severity }: { severity: Severity }) {
+  return <Badge className={cn(chip, SEVERITY_TINT[severity])}>{SEVERITY_LABEL[severity]}</Badge>;
+}
+
+function scenarioReadText(s: Scenario): string {
+  return [
+    s.title,
+    "In plain English. " + plainText(s.plain),
+    "The situation. " + plainText(s.situation),
+    "The task. " + plainText(s.task),
+    "Actions taken. " + s.actions.map(plainText).join(". "),
+    "The result. " + plainText(s.result),
+    "Lessons learned. " + s.lessons.map(plainText).join(". "),
+    "A likely follow-up question. " + plainText(s.followUp),
+  ].join(". ");
+}
+
+export function ScenarioCard({ scenario: s, open }: { scenario: Scenario; open: boolean }) {
+  return (
+    <AccordionItem value={`cs-${s.id}`} id={`item-cs-${s.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span className="w-6 shrink-0 font-mono text-[11px] font-bold text-faint" aria-hidden>
+          {String(s.id).padStart(2, "0")}
+        </span>
+        <SeverityBadge severity={s.severity} />
+        <ProviderBadge provider={s.provider} />
+        <span className="order-last w-full text-[14.5px] font-medium tracking-[-0.01em] text-ink sm:order-none sm:w-auto sm:flex-1">
+          {s.title}
+        </span>
+        <span className="mono-label hidden text-faint xl:inline">{s.category}</span>
+        <TierBadge tier={s.tier} />
+      </AccordionTrigger>
+
+      {!open && (
+        <p className="soc-noprint -mt-1 max-w-(--soc-measure) px-4 pb-3.5 text-[13px] leading-normal text-muted-2 sm:px-5 sm:pl-14">
+          <span className="mono-label mr-1.5 text-accent-strong">TL;DR</span>
+          {s.task}
+        </p>
+      )}
+
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex items-center justify-between gap-2">
+          <CertTags certs={s.certs} />
+          <ListenButton
+            id={`cs-${s.id}`}
+            title={s.title}
+            kind="Cloud scenario"
+            getText={() => scenarioReadText(s)}
+          />
+        </div>
+
+        <div className="space-y-5">
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">In plain English</span>
+            <Html className="soc-prose" html={s.plain} />
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>Situation</BlockHeading>
+            <Html className="soc-prose" html={`<p>${s.situation}</p>`} />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>Task</BlockHeading>
+            <Html className="soc-prose" html={`<p>${s.task}</p>`} />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>Action</BlockHeading>
+            <Html
+              className="soc-prose"
+              html={`<ol>${s.actions.map((a) => `<li>${a}</li>`).join("")}</ol>`}
+            />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>Result</BlockHeading>
+            <Html className="soc-prose" html={`<p>${s.result}</p>`} />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>Lessons</BlockHeading>
+            <Html
+              className="soc-prose"
+              html={`<ul>${s.lessons.map((l) => `<li>${l}</li>`).join("")}</ul>`}
+            />
+            {s.attack.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {s.attack.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[9.5px] text-muted-2"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">Likely follow-up</span>
+            <Html
+              className="text-[15px] font-medium leading-relaxed text-ink"
+              html={`“${s.followUp}”`}
+            />
+          </div>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+/* ---------------- Deep dive 1: attack paths ---------------- */
+
+export function AttackPathCard({
+  path: a,
+  providerFilter,
+}: {
+  path: AttackPath;
+  providerFilter: Provider | "all";
+}) {
+  const providers = PROVIDER_ORDER.filter(
+    (p) => a.providers[p] && (providerFilter === "all" || p === providerFilter)
+  );
+  return (
+    <AccordionItem value={`ap-${a.id}`} id={`item-ap-${a.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span className="w-6 shrink-0 font-mono text-[11px] font-bold text-faint" aria-hidden>
+          {String(a.id).padStart(2, "0")}
+        </span>
+        <span className="order-last w-full text-[14.5px] font-medium tracking-[-0.01em] text-ink sm:order-none sm:w-auto sm:flex-1">
+          {a.title}
+        </span>
+        <span className="mono-label hidden text-faint lg:inline">{a.category}</span>
+        <TierBadge tier={a.tier} />
+      </AccordionTrigger>
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex items-center justify-between gap-2">
+          <CertTags certs={a.certs} />
+          <ListenButton
+            id={`ap-${a.id}`}
+            title={a.title}
+            kind="Cloud attack path"
+            getText={() =>
+              [
+                a.title,
+                "How the attack works. " + plainText(a.how),
+                "The misconfiguration that enables it. " + plainText(a.enabler),
+                "How to detect it. " + plainText(a.detect),
+                "How to prevent it. " + plainText(a.fix),
+              ].join(". ")
+            }
+          />
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <BlockHeading>How the attack works</BlockHeading>
+            <Html className="soc-prose" html={a.how} />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>The misconfiguration that enables it</BlockHeading>
+            <Html className="soc-prose" html={a.enabler} />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>How to detect it</BlockHeading>
+            <Html className="soc-prose" html={a.detect} />
+          </div>
+          <div className="space-y-2">
+            <BlockHeading>How to prevent it</BlockHeading>
+            <Html className="soc-prose" html={a.fix} />
+          </div>
+
+          {providers.map((p) => (
+            <div key={p} className="space-y-2">
+              <div className="mono-label flex items-center gap-2 text-muted-2">
+                <span aria-hidden className={cn("size-2 rounded-full", PROVIDER_DOT[p])} />
+                {PROVIDER_NAMES[p]}
+              </div>
+              <Html className="soc-prose" html={a.providers[p] ?? ""} />
+            </div>
+          ))}
+
+          {a.attack.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {a.attack.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[9.5px] text-muted-2"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+/* ---------------- Deep dive 2: ATT&CK tactics ---------------- */
+
+export function TacticCard({ tactic: t }: { tactic: Tactic }) {
+  return (
+    <AccordionItem value={`ta-${t.id}`} id={`item-ta-${t.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span className="shrink-0 font-mono text-[10.5px] font-bold text-accent-strong" aria-hidden>
+          {t.id}
+        </span>
+        <span className="order-last w-full text-[14.5px] font-medium tracking-[-0.01em] text-ink sm:order-none sm:w-auto sm:flex-1">
+          {t.name}
+        </span>
+        <span className="mono-label hidden text-faint lg:inline">
+          {t.techniques.length} techniques
+        </span>
+      </AccordionTrigger>
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex items-center justify-end">
+          <ListenButton
+            id={`ta-${t.id}`}
+            title={`${t.name} tactic`}
+            kind="ATT&CK tactic"
+            getText={() =>
+              [
+                `${t.name}. ${t.goal}`,
+                ...t.techniques.map(
+                  (k) => `${k.name}. In the cloud: ${k.cloud} Detection: ${k.detect}`
+                ),
+              ].join(" ")
+            }
+          />
+        </div>
+        <p className="soc-prose mb-4">{t.goal}</p>
+        <div className="space-y-3">
+          {t.techniques.map((k) => (
+            <div key={k.id + k.name} className="rounded-md border border-hairline p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[9.5px] text-accent-strong">
+                  {k.id}
+                </span>
+                <span className="text-[14px] font-medium text-ink">{k.name}</span>
+              </div>
+              <p className="soc-prose mt-2">{k.cloud}</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-2">
+                <span className="mono-label mr-1.5 text-accent-strong">DETECT</span>
+                {k.detect}
+              </p>
+            </div>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+/* ---------------- Deep dive 3: hardening playbooks ---------------- */
+
+export function PlaybookCard({
+  playbook: p,
+  providerFilter,
+}: {
+  playbook: Playbook;
+  providerFilter: Provider | "all";
+}) {
+  const providers = PROVIDER_ORDER.filter(
+    (x) => p.providers[x] && (providerFilter === "all" || x === providerFilter)
+  );
+  return (
+    <AccordionItem value={`pb-${p.id}`} id={`item-pb-${p.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span className="order-last w-full text-[14.5px] font-medium tracking-[-0.01em] text-ink sm:order-none sm:w-auto sm:flex-1">
+          {p.domain}
+        </span>
+        <span className="mono-label hidden text-faint lg:inline">
+          {p.checklist.length} controls
+        </span>
+        <TierBadge tier={p.tier} />
+      </AccordionTrigger>
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex items-center justify-between gap-2">
+          <CertTags certs={p.certs} />
+          <ListenButton
+            id={`pb-${p.id}`}
+            title={`${p.domain} hardening playbook`}
+            kind="Hardening playbook"
+            getText={() =>
+              [`${p.domain} hardening. Goal: ${p.goal}`, ...p.checklist.map(plainText)].join(". ")
+            }
+          />
+        </div>
+
+        <div className="space-y-5">
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">Goal</span>
+            <p className="soc-prose">{p.goal}</p>
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>Checklist</BlockHeading>
+            <ul className="space-y-2.5">
+              {p.checklist.map((c, i) => (
+                <li key={i} className="flex gap-3">
+                  <span
+                    aria-hidden
+                    className="mt-0.5 shrink-0 font-mono text-[11px] text-accent-strong"
+                  >
+                    ☐
+                  </span>
+                  <Html className="soc-prose flex-1" html={c} />
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {providers.map((x) => (
+            <div key={x} className="space-y-2">
+              <div className="mono-label flex items-center gap-2 text-muted-2">
+                <span aria-hidden className={cn("size-2 rounded-full", PROVIDER_DOT[x])} />
+                {PROVIDER_NAMES[x]}
+              </div>
+              <Html className="soc-prose" html={p.providers[x] ?? ""} />
+            </div>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+export function RoleCard({ role: r }: { role: Role }) {
+  return (
+    <article className="rounded-lg border-[1.5px] border-hairline bg-surface p-5 sm:p-6">
+      <Badge className={cn(chip, "mb-3 text-paper", TIER_SOLID[r.tier])}>
+        {TIER_NAMES[r.tier].toUpperCase()}
+      </Badge>
+      <h3 className="font-display text-lg font-semibold tracking-[-0.02em]">{r.title}</h3>
+      <p className="mono-label mt-0.5 mb-4 text-muted-2">{r.range}</p>
+      <Html
+        className="soc-prose"
+        html={`<ol class="soc-steps">${r.items.map((i) => `<li>${i}</li>`).join("")}</ol>`}
+      />
+      <p className="mono-label mt-4 border-t border-divider pt-3 text-faint">{r.kpi}</p>
+    </article>
+  );
+}
+
+export function EmptyNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="rounded-md border border-dashed border-hairline py-8 text-center font-mono text-xs text-muted-2">
+      {children}
+    </p>
+  );
+}
+
+export { Button };

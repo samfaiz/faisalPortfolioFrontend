@@ -21,6 +21,7 @@ import {
   MALWARE_DEFINITIONS,
   SCENARIO_EXPLAINERS,
 } from "@/lib/soc-prep/extras";
+import { PLATFORM_NAMES, type LogSource } from "@/lib/soc-prep/logs";
 import { ListenButton, plainText } from "./speech";
 
 /* Tier + severity tints (vars defined in globals.css, theme-aware). */
@@ -377,6 +378,84 @@ export function FundamentalItem({
         ) : (
           <Html className="soc-prose" html={q.answer} />
         )}
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+export function LogSourceCard({ source: s }: { source: LogSource }) {
+  return (
+    <AccordionItem value={`lg-${s.id}`} id={`item-lg-${s.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span className="w-6 shrink-0 font-mono text-[11px] font-bold text-faint" aria-hidden>
+          {String(s.id).padStart(2, "0")}
+        </span>
+        <span className="order-last w-full text-[14.5px] font-medium tracking-[-0.01em] text-ink sm:order-none sm:w-auto sm:flex-1">
+          {s.name}
+        </span>
+        <span className="mono-label hidden text-faint lg:inline">
+          {PLATFORM_NAMES[s.platform]}
+        </span>
+        <LevelBadge level={s.level} />
+      </AccordionTrigger>
+
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex justify-end">
+          <ListenButton
+            id={`lg-${s.id}`}
+            title={s.name}
+            kind="Log source"
+            getText={() =>
+              [
+                s.name,
+                "What it records. " + plainText(s.what),
+                "Where to find it. " + plainText(s.where),
+                "How to read it. " + plainText(s.fields),
+                "What to look for. " + s.lookFor.map(plainText).join(". "),
+                "A real case. " + plainText(s.scenario),
+              ].join(". ")
+            }
+          />
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <BlockHeading>What it records</BlockHeading>
+            <Html className="soc-prose" html={s.what} />
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>Where to find it</BlockHeading>
+            <Html className="soc-prose" html={s.where} />
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>Sample entry</BlockHeading>
+            <pre className="overflow-x-auto rounded-r-md border-l-2 border-accent bg-panel px-4 py-3.5 font-mono text-[12px] leading-relaxed text-on-dark">
+              {s.sample}
+            </pre>
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>How to read it</BlockHeading>
+            <Html className="soc-prose" html={s.fields} />
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>What to look for</BlockHeading>
+            <Html
+              className="soc-prose"
+              html={`<ul>${s.lookFor.map((l) => `<li>${l}</li>`).join("")}</ul>`}
+            />
+          </div>
+
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">
+              Real case — this log was the answer
+            </span>
+            <Html className="soc-prose" html={s.scenario} />
+          </div>
+        </div>
       </AccordionContent>
     </AccordionItem>
   );

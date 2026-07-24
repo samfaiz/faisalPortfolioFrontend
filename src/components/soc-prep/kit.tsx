@@ -23,12 +23,20 @@ import {
   SCENARIO_EXPLAINERS,
 } from "@/lib/soc-prep/extras";
 import { MCQ_COUNT } from "@/lib/soc-prep/mcq";
+import {
+  LOG_COUNT,
+  LOG_PLATFORMS,
+  LOG_SOURCES,
+  PLATFORM_NAMES,
+  type Platform,
+} from "@/lib/soc-prep/logs";
 import { SocQuiz } from "./quiz";
 import { speech, useActiveTopic } from "./speech";
 import { SocAssistant } from "./assistant";
 import {
   EmptyNote,
   FundamentalItem,
+  LogSourceCard,
   MalwareItem,
   ResourceGroupList,
   RoleCard,
@@ -73,15 +81,22 @@ const FUNDAMENTAL_TEXT = FUNDAMENTALS.map((q) => {
 const SCENARIO_CATS = [...new Set(SCENARIOS.map((s) => s.category))];
 const QA_CATS = [...new Set(FUNDAMENTALS.map((q) => q.category))];
 
+const LOG_TEXT = LOG_SOURCES.map((l) =>
+  strip(
+    [l.name, PLATFORM_NAMES[l.platform], l.what, l.where, l.sample, l.fields, ...l.lookFor, l.scenario].join(" ")
+  )
+);
+
 const READ_TOTAL = SCENARIOS.length + MALWARE.length;
 
 const SECTIONS = [
   { id: "fundamentals", num: "/01", label: "FUNDAMENTALS" },
-  { id: "roles", num: "/02", label: "ROLES" },
-  { id: "scenarios", num: "/03", label: "SCENARIOS" },
-  { id: "malware", num: "/04", label: "MALWARE" },
-  { id: "quiz", num: "/05", label: "QUIZ" },
-  { id: "resources", num: "/06", label: "RESOURCES" },
+  { id: "logs", num: "/02", label: "LOGS" },
+  { id: "roles", num: "/03", label: "ROLES" },
+  { id: "scenarios", num: "/04", label: "SCENARIOS" },
+  { id: "malware", num: "/05", label: "MALWARE" },
+  { id: "quiz", num: "/06", label: "QUIZ" },
+  { id: "resources", num: "/07", label: "RESOURCES" },
 ] as const;
 
 type SectionId = (typeof SECTIONS)[number]["id"];
@@ -218,6 +233,8 @@ export function SocPrepKit() {
   const [openScenario, setOpenScenario] = useState("");
   const [openMalware, setOpenMalware] = useState("");
   const [openQa, setOpenQa] = useState<string[]>([]);
+  const [openLog, setOpenLog] = useState("");
+  const [logPlatform, setLogPlatform] = useState<"all" | Platform>("all");
 
   const [activeSection, setActiveSection] = useState<SectionId>("fundamentals");
   const [showFab, setShowFab] = useState(false);
@@ -329,6 +346,25 @@ export function SocPrepKit() {
           (!q || FUNDAMENTAL_TEXT[i].includes(q))
       ),
     [level, qaCat, q]
+  );
+
+  const visibleLogs = useMemo(
+    () =>
+      LOG_SOURCES.filter(
+        (l, i) =>
+          (level === "all" || l.level === level) &&
+          (logPlatform === "all" || l.platform === logPlatform) &&
+          (!q || LOG_TEXT[i].includes(q))
+      ),
+    [level, logPlatform, q]
+  );
+
+  const logPlatformCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        LOG_PLATFORMS.map((p) => [p, LOG_SOURCES.filter((l) => l.platform === p).length])
+      ),
+    []
   );
 
   const visibleRoles = ROLES.filter((r) => level === "all" || r.level === level);
@@ -530,11 +566,11 @@ export function SocPrepKit() {
           <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border-[1.5px] border-ink bg-hairline sm:grid-cols-3 lg:grid-cols-6">
             {[
               { n: FUNDAMENTALS.length, label: "Fundamentals", href: "#fundamentals" },
+              { n: LOG_COUNT, label: "Log sources", href: "#logs" },
               { n: SCENARIOS.length, label: "Scenarios", href: "#scenarios" },
               { n: MCQ_COUNT, label: "Quiz questions", href: "#quiz" },
               { n: MALWARE.length, label: "Malware topics", href: "#malware" },
               { n: RESOURCE_COUNT, label: "Free resources", href: "#resources" },
-              { n: ROLES.length, label: "Tiers", href: "#roles" },
             ].map((m) => (
               <a
                 key={m.label}
@@ -678,9 +714,64 @@ export function SocPrepKit() {
           )}
         </section>
 
-        {/* /02 RESPONSIBILITIES */}
+        {/* /02 LOGS */}
+        <section id="logs" className="scroll-mt-28 pt-14 md:scroll-mt-40">
+          <SectionHeader
+            num="/02"
+            title="Log Analysis"
+            count={`${visibleLogs.length} / ${LOG_SOURCES.length} shown`}
+          />
+          <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
+            {"// Every log an analyst reads — what it records, where it lives, a real sample, the fields that matter, what to look for, and a case where it was the answer."}
+          </p>
+
+          <div
+            role="group"
+            aria-label="Filter logs by platform"
+            className="soc-noprint mb-5 flex flex-wrap gap-1.5"
+          >
+            {(["all", ...LOG_PLATFORMS] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={logPlatform === p}
+                onClick={() => setLogPlatform(p)}
+                className={cn(
+                  "mono-label rounded-pill border-[1.5px] px-3 py-1.5 transition-colors",
+                  logPlatform === p
+                    ? "border-ink bg-ink text-paper"
+                    : "border-hairline text-muted-2 hover:border-ink hover:text-ink"
+                )}
+              >
+                {p === "all"
+                  ? `ALL ${LOG_SOURCES.length}`
+                  : `${PLATFORM_NAMES[p].toUpperCase()} ${logPlatformCounts[p]}`}
+              </button>
+            ))}
+          </div>
+
+          <Accordion
+            type="single"
+            collapsible
+            value={openLog}
+            onValueChange={(v) => {
+              speech.stop();
+              setOpenLog(v);
+              if (v) keepInView(`item-${v}`);
+            }}
+          >
+            {visibleLogs.map((l) => (
+              <LogSourceCard key={l.id} source={l} />
+            ))}
+          </Accordion>
+          {visibleLogs.length === 0 && (
+            <EmptyNote>No log sources match. Clear the search or pick another platform.</EmptyNote>
+          )}
+        </section>
+
+        {/* /03 RESPONSIBILITIES */}
         <section id="roles" className="scroll-mt-28 pt-14 md:scroll-mt-40">
-          <SectionHeader num="/02" title="Responsibilities" count="What you own at each tier" />
+          <SectionHeader num="/03" title="Responsibilities" count="What you own at each tier" />
           <p className="mt-3 mb-6 font-mono text-[11.5px] text-muted-2">
             {"// Know your own job description before the interview. Answer with what you own, not what the tool does."}
           </p>
@@ -691,10 +782,10 @@ export function SocPrepKit() {
           </div>
         </section>
 
-        {/* /03 SCENARIOS */}
+        {/* /04 SCENARIOS */}
         <section id="scenarios" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/03"
+            num="/04"
             title="50 Scenarios"
             count={`${visibleScenarios.length} / ${SCENARIOS.length} shown`}
           />
@@ -734,10 +825,10 @@ export function SocPrepKit() {
           )}
         </section>
 
-        {/* /04 MALWARE */}
+        {/* /05 MALWARE */}
         <section id="malware" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/04"
+            num="/05"
             title="Malware Analysis"
             count={`${visibleMalware.length} / ${MALWARE.length} shown`}
           />
@@ -766,10 +857,10 @@ export function SocPrepKit() {
           {visibleMalware.length === 0 && <EmptyNote>No topics match your filter.</EmptyNote>}
         </section>
 
-        {/* /05 PRACTICE QUIZ */}
+        {/* /06 PRACTICE QUIZ */}
         <section id="quiz" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/05"
+            num="/06"
             title="Practice Quiz"
             count={`${MCQ_COUNT} questions`}
           />
@@ -779,9 +870,9 @@ export function SocPrepKit() {
           <SocQuiz level={level} />
         </section>
 
-        {/* /06 RESOURCES */}
+        {/* /07 RESOURCES */}
         <section id="resources" className="scroll-mt-28 pt-14 md:scroll-mt-40">
-          <SectionHeader num="/06" title="Free Resources" count="All free or free-tier" />
+          <SectionHeader num="/07" title="Free Resources" count="All free or free-tier" />
           <p className="mt-3 mb-6 font-mono text-[11.5px] text-muted-2">
             {"// YouTube channels, hands-on labs, malware sandboxes, and reference sites. Every link is free to use."}
           </p>

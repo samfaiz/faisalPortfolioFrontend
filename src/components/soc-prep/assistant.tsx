@@ -101,7 +101,7 @@ interface Turn {
 }
 type Status = "idle" | "recording" | "thinking" | "answering";
 
-export function SocAssistant() {
+export function SocAssistant({ domain = "soc" }: { domain?: "soc" | "cloud" }) {
   const topic = useActiveTopic();
   const speakingId = useSpeakingId();
   const speaking = speakingId !== null;
@@ -213,6 +213,7 @@ export function SocAssistant() {
         question: q,
         topic: { title: t.title, text: t.text },
         history,
+        domain,
       };
       if (tokenRef.current) body.turnstile_token = tokenRef.current;
 
@@ -296,7 +297,7 @@ export function SocAssistant() {
         setStatus("idle");
       }
     },
-    [commitTurn]
+    [commitTurn, domain]
   );
 
   /** Interrupt everything: cancel the request and stop the spoken answer,
