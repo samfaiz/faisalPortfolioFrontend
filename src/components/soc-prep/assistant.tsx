@@ -16,6 +16,73 @@ const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 const HANDSFREE_KEY = "soc-prep:handsfree";
 const CHAT_PREFIX = "soc-prep:chat:";
 
+/* ---- Turnstile token broker -------------------------------------------------
+ * A Turnstile token is single-use: replaying one gets `timeout-or-duplicate`
+ * back from siteverify, so holding one in a ref and sending it with every
+ * question would 403 from the second question onward. Instead each token is
+ * handed out once and the widget is reset immediately to mint the next one.
+ * takeTurnstileToken() waits for that next token rather than sending a stale
+ * one, and resolves null if the widget is absent or slow — the server treats a
+ * missing token as a failed check only when it has a secret configured.
+ */
+interface TurnstileGlobal {
+  render: (
+    el: HTMLElement,
+    opts: {
+      sitekey: string;
+      callback: (token: string) => void;
+      "expired-callback"?: () => void;
+      "error-callback"?: () => void;
+      theme: string;
+    }
+  ) => string;
+  reset: (widgetId: string) => void;
+  remove: (widgetId: string) => void;
+}
+const turnstileApi = () =>
+  (window as unknown as { turnstile?: TurnstileGlobal }).turnstile;
+
+let tsWidgetId: string | null = null;
+let tsToken: string | null = null;
+let tsWaiters: ((token: string | null) => void)[] = [];
+
+function tsResetWidget() {
+  tsToken = null;
+  const api = turnstileApi();
+  if (tsWidgetId && api) api.reset(tsWidgetId);
+}
+
+/* Called by Cloudflare whenever a fresh token is solved. */
+function tsOnToken(token: string) {
+  const waiter = tsWaiters.shift();
+  if (waiter) {
+    waiter(token);
+    tsResetWidget(); // consumed — start solving the next one now
+  } else {
+    tsToken = token; // park it for the next question
+  }
+}
+
+async function takeTurnstileToken(timeoutMs = 8000): Promise<string | null> {
+  if (!TURNSTILE_SITE_KEY) return null;
+  if (tsToken) {
+    const token = tsToken;
+    tsResetWidget();
+    return token;
+  }
+  return new Promise((resolve) => {
+    const waiter = (token: string | null) => {
+      clearTimeout(timer);
+      resolve(token);
+    };
+    const timer = setTimeout(() => {
+      tsWaiters = tsWaiters.filter((w) => w !== waiter);
+      resolve(null);
+    }, timeoutMs);
+    tsWaiters.push(waiter);
+  });
+}
+
 /* Suggested starter questions by card type — steer usage toward useful prompts. */
 function chipsFor(kind?: string): string[] {
   switch (kind) {
@@ -124,7 +191,6 @@ export function SocAssistant({ domain = "soc" }: { domain?: "soc" | "cloud" }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const topicRef = useRef(topic);
   const turnsRef = useRef<Turn[]>([]);
-  const tokenRef = useRef<string | undefined>(undefined);
   const speakingRef = useRef(false);
   const handsFreeRef = useRef(false);
   const coachWordsRef = useRef<Set<string>>(new Set());
@@ -215,7 +281,8 @@ export function SocAssistant({ domain = "soc" }: { domain?: "soc" | "cloud" }) {
         history,
         domain,
       };
-      if (tokenRef.current) body.turnstile_token = tokenRef.current;
+      const turnstileToken = await takeTurnstileToken();
+      if (turnstileToken) body.turnstile_token = turnstileToken;
 
       // 1) Streamed path.
       try {
@@ -804,27 +871,32 @@ export function SocAssistant({ domain = "soc" }: { domain?: "soc" | "cloud" }) {
         </div>
       </div>
 
-      {TURNSTILE_SITE_KEY && (
-        <TurnstileWidget siteKey={TURNSTILE_SITE_KEY} onToken={(t) => (tokenRef.current = t)} />
-      )}
+      {TURNSTILE_SITE_KEY && <TurnstileWidget siteKey={TURNSTILE_SITE_KEY} />}
     </div>
   );
 }
 
-/* ---- Optional Cloudflare Turnstile (only mounts when a site key is set) --- */
-interface TurnstileGlobal {
-  render: (el: HTMLElement, opts: { sitekey: string; callback: (token: string) => void; theme: string }) => void;
-}
-function TurnstileWidget({ siteKey, onToken }: { siteKey: string; onToken: (t: string) => void }) {
+/* ---- Optional Cloudflare Turnstile (only mounts when a site key is set) ---
+ * Tokens go through the broker above, not a callback prop — the widget outlives
+ * individual questions and has to keep minting a fresh token after each one.
+ */
+function TurnstileWidget({ siteKey }: { siteKey: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const w = window as unknown as { turnstile?: TurnstileGlobal };
     const render = () => {
-      if (ref.current && w.turnstile) {
-        w.turnstile.render(ref.current, { sitekey: siteKey, callback: onToken, theme: "auto" });
-      }
+      const api = turnstileApi();
+      if (!ref.current || !api || tsWidgetId) return;
+      tsWidgetId = api.render(ref.current, {
+        sitekey: siteKey,
+        callback: tsOnToken,
+        // An expired or errored challenge leaves us with no token; reset so the
+        // next question waits on a fresh one instead of sending nothing.
+        "expired-callback": tsResetWidget,
+        "error-callback": tsResetWidget,
+        theme: "auto",
+      });
     };
-    if (w.turnstile) {
+    if (turnstileApi()) {
       render();
       return;
     }
@@ -833,6 +905,19 @@ function TurnstileWidget({ siteKey, onToken }: { siteKey: string; onToken: (t: s
     s.async = true;
     s.onload = render;
     document.head.appendChild(s);
-  }, [siteKey, onToken]);
+  }, [siteKey]);
+
+  // The dock unmounts whenever the topic closes. Drop the widget with it, or
+  // the stale id blocks the next mount from rendering a new one.
+  useEffect(
+    () => () => {
+      const api = turnstileApi();
+      if (tsWidgetId && api) api.remove(tsWidgetId);
+      tsWidgetId = null;
+      tsToken = null;
+    },
+    []
+  );
+
   return <div ref={ref} className="px-3.5 pb-3" />;
 }
