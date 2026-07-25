@@ -28,7 +28,19 @@ import { speech, useActiveTopic } from "@/components/soc-prep/speech";
 import { SocAssistant } from "@/components/soc-prep/assistant";
 import { ResourceGroupList } from "@/components/soc-prep/parts";
 import {
+  CLOUD_LEARNING_PATHS,
+  CLOUD_PATH_TOTAL_MINUTES,
+  type CloudPathRef,
+} from "@/lib/cloud-prep/path";
+import {
+  CLOUD_PROJECTS,
+  CLOUD_PROJECT_CATS,
+  CLOUD_PROJECT_COUNT,
+} from "@/lib/cloud-prep/projects";
+import {
   AttackPathCard,
+  CloudPathModuleCard,
+  CloudProjectCard,
   EmptyNote,
   FundamentalCard,
   PlaybookCard,
@@ -85,13 +97,37 @@ const DEEP_TABS = [
 type DeepTab = (typeof DEEP_TABS)[number]["id"];
 
 const SECTIONS = [
-  { id: "fundamentals", num: "/01", label: "FUNDAMENTALS" },
-  { id: "roles", num: "/02", label: "ROLES" },
-  { id: "scenarios", num: "/03", label: "SCENARIOS" },
-  { id: "deepdives", num: "/04", label: "DEEP DIVES" },
-  { id: "quiz", num: "/05", label: "QUIZ" },
-  { id: "resources", num: "/06", label: "RESOURCES" },
+  { id: "path", num: "/01", label: "START HERE" },
+  { id: "fundamentals", num: "/02", label: "FUNDAMENTALS" },
+  { id: "roles", num: "/03", label: "ROLES" },
+  { id: "scenarios", num: "/04", label: "SCENARIOS" },
+  { id: "deepdives", num: "/05", label: "DEEP DIVES" },
+  { id: "projects", num: "/06", label: "PROJECTS" },
+  { id: "quiz", num: "/07", label: "QUIZ" },
+  { id: "resources", num: "/08", label: "RESOURCES" },
 ] as const;
+
+const PROJECT_TEXT = CLOUD_PROJECTS.map((p) =>
+  strip(
+    [
+      p.title,
+      p.category,
+      p.tagline,
+      p.outcome,
+      p.proves,
+      ...p.stack,
+      ...p.prerequisites,
+      ...p.steps.flatMap((s) => [s.title, s.detail]),
+      ...p.validation,
+      p.pitch,
+      ...p.stretch,
+    ].join(" ")
+  )
+);
+
+const ASSOCIATE_PATH = CLOUD_LEARNING_PATHS[0];
+const CLOUD_PATH_KEY = "cloud-prep:path-done";
+const CLOUD_BUILT_KEY = "cloud-prep:projects-built";
 type SectionId = (typeof SECTIONS)[number]["id"];
 
 type TierFilter = "all" | Tier;
@@ -137,10 +173,12 @@ function SectionHeader({
   num,
   title,
   count,
+  action,
 }: {
   num: string;
   title: string;
   count?: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b-2 border-ink pb-3">
@@ -148,6 +186,7 @@ function SectionHeader({
       <h2 className="font-display text-[clamp(1.45rem,3.5vw,2.1rem)] font-bold uppercase leading-none tracking-[-0.03em]">
         {title}
       </h2>
+      {action}
       <span className="mono-label ml-auto text-faint">{count}</span>
     </div>
   );
@@ -207,7 +246,12 @@ export function CloudPrepKit() {
   const [scenarioCat, setScenarioCat] = useState("all");
   const [deepTab, setDeepTab] = useState<DeepTab>("attacks");
   const [openDeep, setOpenDeep] = useState("");
-  const [activeSection, setActiveSection] = useState<SectionId>("fundamentals");
+  const [openPath, setOpenPath] = useState("");
+  const [pathDone, setPathDone] = useState<Set<number>>(new Set());
+  const [openProject, setOpenProject] = useState("");
+  const [projectCat, setProjectCat] = useState("all");
+  const [built, setBuilt] = useState<Set<number>>(new Set());
+  const [activeSection, setActiveSection] = useState<SectionId>("path");
   const [showFab, setShowFab] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -215,20 +259,27 @@ export function CloudPrepKit() {
 
   useEffect(() => () => speech.stop(), []);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const s = localStorage.getItem(SIZE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (s === "lg" || s === "xl") setSize(s);
+      const p = JSON.parse(localStorage.getItem(CLOUD_PATH_KEY) ?? "[]");
+      if (Array.isArray(p)) setPathDone(new Set(p.filter((n) => typeof n === "number")));
+      const b = JSON.parse(localStorage.getItem(CLOUD_BUILT_KEY) ?? "[]");
+      if (Array.isArray(b)) setBuilt(new Set(b.filter((n) => typeof n === "number")));
     } catch {}
     setHydrated(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!hydrated) return;
     try {
       localStorage.setItem(SIZE_KEY, size);
+      localStorage.setItem(CLOUD_PATH_KEY, JSON.stringify([...pathDone]));
+      localStorage.setItem(CLOUD_BUILT_KEY, JSON.stringify([...built]));
     } catch {}
-  }, [size, hydrated]);
+  }, [size, pathDone, built, hydrated]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -258,7 +309,7 @@ export function CloudPrepKit() {
         const pct = (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) * 100;
         if (progressRef.current) progressRef.current.style.width = `${pct}%`;
         setShowFab(window.scrollY > 600);
-        let current: SectionId = "fundamentals";
+        let current: SectionId = "path";
         for (const s of SECTIONS) {
           const el = document.getElementById(s.id);
           if (el && el.getBoundingClientRect().top <= 170) current = s.id;
@@ -345,6 +396,63 @@ export function CloudPrepKit() {
           (!q || PLAYBOOK_TEXT[i].includes(q))
       ),
     [tier, cert, provider, q]
+  );
+
+  /** Jump from a path step to the full card: clear anything that would hide it,
+   *  open it, then scroll it into view. */
+  const goToRef = (ref: CloudPathRef) => {
+    speech.stop();
+    setQuery("");
+    setTier("all");
+    setCert("all");
+    const target = `${ref.kind}-${ref.id}`;
+    if (ref.kind === "cf") {
+      setCat("all");
+      setOpenFund((prev) => (prev.includes(target) ? prev : [...prev, target]));
+    } else if (ref.kind === "cs") {
+      setScenarioCat("all");
+      setOpenScenario(target);
+    } else {
+      setDeepTab(ref.kind === "ap" ? "attacks" : ref.kind === "pb" ? "playbooks" : "attack-matrix");
+      setOpenDeep(target);
+    }
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`item-${target}`);
+        if (!el) return;
+        const bar = document.getElementById("cloud-controls");
+        const offset = (bar ? bar.getBoundingClientRect().bottom : 100) + 10;
+        window.scrollTo({
+          top: el.getBoundingClientRect().top + window.scrollY - offset,
+          behavior: "smooth",
+        });
+      })
+    );
+  };
+
+  const pathProgress = Math.round((pathDone.size / ASSOCIATE_PATH.modules.length) * 100);
+
+  const visibleProjects = useMemo(
+    () =>
+      CLOUD_PROJECTS.filter(
+        (p, i) =>
+          (tier === "all" || p.tier === tier) &&
+          (provider === "all" || p.providers.includes(provider)) &&
+          (projectCat === "all" || p.category === projectCat) &&
+          (!q || PROJECT_TEXT[i].includes(q))
+      ),
+    [tier, provider, projectCat, q]
+  );
+
+  const projectCatCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        CLOUD_PROJECT_CATS.map((c) => [
+          c,
+          CLOUD_PROJECTS.filter((p) => p.category === c).length,
+        ])
+      ),
+    []
   );
 
   const deepCount =
@@ -501,9 +609,9 @@ export function CloudPrepKit() {
               { n: FUNDAMENTALS.length, label: "Fundamentals", href: "#fundamentals" },
               { n: SCENARIOS.length, label: "Scenarios", href: "#scenarios" },
               { n: ATTACK_PATHS.length, label: "Attack paths", href: "#deepdives" },
+              { n: CLOUD_PROJECT_COUNT, label: "Projects", href: "#projects" },
               { n: CLOUD_MCQ_COUNT, label: "Quiz questions", href: "#quiz" },
               { n: RESOURCE_COUNT, label: "Free resources", href: "#resources" },
-              { n: 3, label: "Clouds", href: "#fundamentals" },
             ].map((m) => (
               <a key={m.label} href={m.href} className="bg-surface p-4 transition-colors hover:bg-surface-alt">
                 <span className="block font-display text-[26px] font-bold leading-none tracking-[-0.03em]">{m.n}</span>
@@ -608,10 +716,85 @@ export function CloudPrepKit() {
 
       {/* ---------- Content ---------- */}
       <main className="mx-auto max-w-6xl px-4 pb-24 sm:px-5">
-        {/* /01 FUNDAMENTALS */}
-        <section id="fundamentals" className="scroll-mt-28 pt-12 md:scroll-mt-44">
+        {/* /01 LEARNING PATH */}
+        <section id="path" className="scroll-mt-28 pt-12 md:scroll-mt-44">
           <SectionHeader
             num="/01"
+            title="Start Here"
+            count={`${pathDone.size} / ${ASSOCIATE_PATH.modules.length} complete`}
+          />
+          <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
+            {"// The rest of this page is a reference library. This is the order to actually learn it in."}
+          </p>
+
+          <div className="mb-5 rounded-lg border-[1.5px] border-ink bg-surface p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h3 className="font-display text-lg font-semibold">{ASSOCIATE_PATH.title}</h3>
+              <span className="mono-label text-muted-2">
+                {ASSOCIATE_PATH.modules.length} modules · ~
+                {Math.round(CLOUD_PATH_TOTAL_MINUTES / 60)} hours
+              </span>
+            </div>
+            <p className="soc-prose mt-2 max-w-(--soc-measure)">{ASSOCIATE_PATH.intro}</p>
+
+            <div className="mt-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="mono-label text-muted-2">Your progress</span>
+                <span className="mono-label text-accent-strong">{pathProgress}%</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-pill bg-surface-alt">
+                <div
+                  className="h-full rounded-pill bg-accent transition-[width] duration-300"
+                  style={{ width: `${pathProgress}%` }}
+                />
+              </div>
+            </div>
+
+            {pathDone.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setPathDone(new Set())}
+                className="mono-label soc-noprint mt-3 text-faint transition-colors hover:text-ink"
+              >
+                reset progress
+              </button>
+            )}
+          </div>
+
+          <Accordion
+            type="single"
+            collapsible
+            value={openPath}
+            onValueChange={(v) => {
+              speech.stop();
+              setOpenPath(v);
+              if (v) keepInView(`item-${v}`);
+            }}
+          >
+            {ASSOCIATE_PATH.modules.map((m) => (
+              <CloudPathModuleCard
+                key={m.id}
+                module={m}
+                done={pathDone.has(m.id)}
+                providerFilter={provider}
+                onToggleDone={() =>
+                  setPathDone((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(m.id)) next.delete(m.id);
+                    else next.add(m.id);
+                    return next;
+                  })
+                }
+                onGoTo={goToRef}
+              />
+            ))}
+          </Accordion>
+        </section>
+
+        {/* /02 FUNDAMENTALS */}
+        <section id="fundamentals" className="scroll-mt-28 pt-12 md:scroll-mt-44">
+          <SectionHeader
+            num="/02"
             title="Fundamentals"
             count={`${visibleFundamentals.length} / ${FUNDAMENTALS.length} shown`}
           />
@@ -655,9 +838,9 @@ export function CloudPrepKit() {
           )}
         </section>
 
-        {/* /02 RESPONSIBILITIES */}
+        {/* /03 RESPONSIBILITIES */}
         <section id="roles" className="scroll-mt-28 pt-14 md:scroll-mt-44">
-          <SectionHeader num="/02" title="Responsibilities" count="What you own at each level" />
+          <SectionHeader num="/03" title="Responsibilities" count="What you own at each level" />
           <p className="mt-3 mb-6 font-mono text-[11.5px] text-muted-2">
             {"// Know your job description before the interview — answer with what you own at your level."}
           </p>
@@ -668,10 +851,10 @@ export function CloudPrepKit() {
           </div>
         </section>
 
-        {/* /03 SCENARIOS */}
+        {/* /04 SCENARIOS */}
         <section id="scenarios" className="scroll-mt-28 pt-14 md:scroll-mt-44">
           <SectionHeader
-            num="/03"
+            num="/04"
             title="Scenarios"
             count={`${visibleScenarios.length} / ${SCENARIOS.length} shown`}
           />
@@ -704,9 +887,9 @@ export function CloudPrepKit() {
           )}
         </section>
 
-        {/* /04 DEEP DIVES */}
+        {/* /05 DEEP DIVES */}
         <section id="deepdives" className="scroll-mt-28 pt-14 md:scroll-mt-44">
-          <SectionHeader num="/04" title="Deep Dives" count={deepCount} />
+          <SectionHeader num="/05" title="Deep Dives" count={deepCount} />
           <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
             {"// How attacks actually work, the ATT&CK cloud matrix, and the checklists that harden each domain."}
           </p>
@@ -768,18 +951,71 @@ export function CloudPrepKit() {
           )}
         </section>
 
-        {/* /05 QUIZ */}
+        {/* /06 PROJECTS */}
+        <section id="projects" className="scroll-mt-28 pt-14 md:scroll-mt-44">
+          <SectionHeader
+            num="/06"
+            title="Projects"
+            count={`${visibleProjects.length} / ${CLOUD_PROJECTS.length} shown`}
+            action={
+              built.size > 0 ? (
+                <span className="mono-label text-accent-strong">✓ {built.size} BUILT</span>
+              ) : undefined
+            }
+          />
+          <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
+            {"// Build these. Nobody hires a cloud security engineer who has only read about IAM. Every project uses free tier where it can — set a budget alert before you start."}
+          </p>
+          <CategoryPills
+            cats={CLOUD_PROJECT_CATS}
+            counts={projectCatCounts}
+            total={CLOUD_PROJECTS.length}
+            active={projectCat}
+            onChange={setProjectCat}
+          />
+          <Accordion
+            type="single"
+            collapsible
+            value={openProject}
+            onValueChange={(v) => {
+              speech.stop();
+              setOpenProject(v);
+              if (v) keepInView(`item-${v}`);
+            }}
+          >
+            {visibleProjects.map((p) => (
+              <CloudProjectCard
+                key={p.id}
+                project={p}
+                built={built.has(p.id)}
+                onToggleBuilt={() =>
+                  setBuilt((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(p.id)) next.delete(p.id);
+                    else next.add(p.id);
+                    return next;
+                  })
+                }
+              />
+            ))}
+          </Accordion>
+          {visibleProjects.length === 0 && (
+            <EmptyNote>No projects match. Clear the search or widen the filters.</EmptyNote>
+          )}
+        </section>
+
+        {/* /07 QUIZ */}
         <section id="quiz" className="scroll-mt-28 pt-14 md:scroll-mt-44">
-          <SectionHeader num="/05" title="Practice Quiz" count={`${CLOUD_MCQ_COUNT} questions`} />
+          <SectionHeader num="/07" title="Practice Quiz" count={`${CLOUD_MCQ_COUNT} questions`} />
           <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
             {"// Test yourself. Immediate feedback and plain-English reasoning — respects the tier, provider, and cert filters above."}
           </p>
           <CloudQuiz tier={tier} provider={provider} cert={cert} />
         </section>
 
-        {/* /06 RESOURCES */}
+        {/* /08 RESOURCES */}
         <section id="resources" className="scroll-mt-28 pt-14 md:scroll-mt-44">
-          <SectionHeader num="/06" title="Free Resources" count={`${RESOURCE_COUNT} free`} />
+          <SectionHeader num="/08" title="Free Resources" count={`${RESOURCE_COUNT} free`} />
           <p className="mt-3 mb-6 font-mono text-[11.5px] text-muted-2">
             {"// Hands-on labs, official baselines, open-source tools, practitioner writing, and free cert prep."}
           </p>

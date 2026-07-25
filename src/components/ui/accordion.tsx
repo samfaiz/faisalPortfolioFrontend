@@ -67,8 +67,13 @@ function AccordionContent({
       {...props}
     >
       <div
+        /* Height is intentionally `auto`, not the Radix-measured
+           --radix-accordion-content-height: that variable is captured once, so
+           content that grows after mount (e.g. a step expanded inline inside an
+           open panel) gets clipped. Both consumers disable the open/close
+           height animation in CSS, so nothing is lost. */
         className={cn(
-          "h-(--radix-accordion-content-height) pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+          "h-auto pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
           className
         )}
       >

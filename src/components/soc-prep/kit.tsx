@@ -34,10 +34,18 @@ import { SocQuiz } from "./quiz";
 import { speech, useActiveTopic } from "./speech";
 import { SocAssistant } from "./assistant";
 import {
+  LEARNING_PATHS,
+  PATH_TOTAL_MINUTES,
+  type PathRef,
+} from "@/lib/soc-prep/path";
+import { PROJECTS, PROJECT_CATS, PROJECT_COUNT } from "@/lib/soc-prep/projects";
+import {
   EmptyNote,
   FundamentalItem,
   LogSourceCard,
   MalwareItem,
+  PathModuleCard,
+  ProjectCard,
   ResourceGroupList,
   RoleCard,
   ScenarioItem,
@@ -90,14 +98,38 @@ const LOG_TEXT = LOG_SOURCES.map((l) =>
 const READ_TOTAL = SCENARIOS.length + MALWARE.length;
 
 const SECTIONS = [
-  { id: "fundamentals", num: "/01", label: "FUNDAMENTALS" },
-  { id: "logs", num: "/02", label: "LOGS" },
-  { id: "roles", num: "/03", label: "ROLES" },
-  { id: "scenarios", num: "/04", label: "SCENARIOS" },
-  { id: "malware", num: "/05", label: "MALWARE" },
-  { id: "quiz", num: "/06", label: "QUIZ" },
-  { id: "resources", num: "/07", label: "RESOURCES" },
+  { id: "path", num: "/01", label: "START HERE" },
+  { id: "fundamentals", num: "/02", label: "FUNDAMENTALS" },
+  { id: "logs", num: "/03", label: "LOGS" },
+  { id: "roles", num: "/04", label: "ROLES" },
+  { id: "scenarios", num: "/05", label: "SCENARIOS" },
+  { id: "malware", num: "/06", label: "MALWARE" },
+  { id: "projects", num: "/07", label: "PROJECTS" },
+  { id: "quiz", num: "/08", label: "QUIZ" },
+  { id: "resources", num: "/09", label: "RESOURCES" },
 ] as const;
+
+const PROJECT_TEXT = PROJECTS.map((p) =>
+  strip(
+    [
+      p.title,
+      p.category,
+      p.tagline,
+      p.outcome,
+      p.proves,
+      ...p.stack,
+      ...p.prerequisites,
+      ...p.steps.flatMap((s) => [s.title, s.detail]),
+      ...p.validation,
+      p.pitch,
+      ...p.stretch,
+    ].join(" ")
+  )
+);
+
+const L1_PATH = LEARNING_PATHS[0];
+const PATH_KEY = "soc-prep:path-done";
+const BUILT_KEY = "soc-prep:projects-built";
 
 type SectionId = (typeof SECTIONS)[number]["id"];
 type LevelFilter = "all" | Level;
@@ -235,8 +267,13 @@ export function SocPrepKit() {
   const [openQa, setOpenQa] = useState<string[]>([]);
   const [openLog, setOpenLog] = useState("");
   const [logPlatform, setLogPlatform] = useState<"all" | Platform>("all");
+  const [openPath, setOpenPath] = useState("");
+  const [pathDone, setPathDone] = useState<Set<number>>(new Set());
+  const [openProject, setOpenProject] = useState("");
+  const [projectCat, setProjectCat] = useState("all");
+  const [built, setBuilt] = useState<Set<number>>(new Set());
 
-  const [activeSection, setActiveSection] = useState<SectionId>("fundamentals");
+  const [activeSection, setActiveSection] = useState<SectionId>("path");
   const [showFab, setShowFab] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -255,6 +292,10 @@ export function SocPrepKit() {
       if (Array.isArray(r)) setRead(new Set(r.filter((k) => typeof k === "string")));
       const s = localStorage.getItem(SIZE_KEY);
       if (s === "lg" || s === "xl") setSize(s);
+      const p = JSON.parse(localStorage.getItem(PATH_KEY) ?? "[]");
+      if (Array.isArray(p)) setPathDone(new Set(p.filter((n) => typeof n === "number")));
+      const b = JSON.parse(localStorage.getItem(BUILT_KEY) ?? "[]");
+      if (Array.isArray(b)) setBuilt(new Set(b.filter((n) => typeof n === "number")));
     } catch {}
     setHydrated(true);
   }, []);
@@ -265,8 +306,10 @@ export function SocPrepKit() {
     try {
       localStorage.setItem(READ_KEY, JSON.stringify([...read]));
       localStorage.setItem(SIZE_KEY, size);
+      localStorage.setItem(PATH_KEY, JSON.stringify([...pathDone]));
+      localStorage.setItem(BUILT_KEY, JSON.stringify([...built]));
     } catch {}
-  }, [read, size, hydrated]);
+  }, [read, size, pathDone, built, hydrated]);
 
   /* --- keyboard: "/" focuses search, Esc clears -------------------- */
   useEffect(() => {
@@ -299,7 +342,7 @@ export function SocPrepKit() {
         const pct = (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) * 100;
         if (progressRef.current) progressRef.current.style.width = `${pct}%`;
         setShowFab(window.scrollY > 600);
-        let current: SectionId = "fundamentals";
+        let current: SectionId = "path";
         for (const s of SECTIONS) {
           const el = document.getElementById(s.id);
           if (el && el.getBoundingClientRect().top <= 170) current = s.id;
@@ -363,6 +406,61 @@ export function SocPrepKit() {
     () =>
       Object.fromEntries(
         LOG_PLATFORMS.map((p) => [p, LOG_SOURCES.filter((l) => l.platform === p).length])
+      ),
+    []
+  );
+
+  /** Jump from a path step to the exact card: clear anything that would hide
+   *  it, open it, then scroll it into view. */
+  const goToRef = (ref: PathRef) => {
+    speech.stop();
+    setQuery("");
+    setLevel("all");
+    const target = `${ref.kind}-${ref.id}`;
+    if (ref.kind === "qa") {
+      setQaCat("all");
+      setOpenQa((prev) => (prev.includes(target) ? prev : [...prev, target]));
+    } else if (ref.kind === "lg") {
+      setLogPlatform("all");
+      setOpenLog(target);
+    } else if (ref.kind === "sc") {
+      setScenarioCat("all");
+      setOpenScenario(target);
+    } else {
+      setOpenMalware(target);
+    }
+    // Two frames so the filter reset and accordion open have rendered.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`item-${target}`);
+        if (!el) return;
+        const bar = document.getElementById("soc-controls");
+        const offset = (bar ? bar.getBoundingClientRect().bottom : 100) + 10;
+        window.scrollTo({
+          top: el.getBoundingClientRect().top + window.scrollY - offset,
+          behavior: "smooth",
+        });
+      })
+    );
+  };
+
+  const pathProgress = Math.round((pathDone.size / L1_PATH.modules.length) * 100);
+
+  const visibleProjects = useMemo(
+    () =>
+      PROJECTS.filter(
+        (p, i) =>
+          (level === "all" || p.level === level) &&
+          (projectCat === "all" || p.category === projectCat) &&
+          (!q || PROJECT_TEXT[i].includes(q))
+      ),
+    [level, projectCat, q]
+  );
+
+  const projectCatCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        PROJECT_CATS.map((c) => [c, PROJECTS.filter((p) => p.category === c).length])
       ),
     []
   );
@@ -568,8 +666,8 @@ export function SocPrepKit() {
               { n: FUNDAMENTALS.length, label: "Fundamentals", href: "#fundamentals" },
               { n: LOG_COUNT, label: "Log sources", href: "#logs" },
               { n: SCENARIOS.length, label: "Scenarios", href: "#scenarios" },
+              { n: PROJECT_COUNT, label: "Projects", href: "#projects" },
               { n: MCQ_COUNT, label: "Quiz questions", href: "#quiz" },
-              { n: MALWARE.length, label: "Malware topics", href: "#malware" },
               { n: RESOURCE_COUNT, label: "Free resources", href: "#resources" },
             ].map((m) => (
               <a
@@ -666,10 +764,83 @@ export function SocPrepKit() {
 
       {/* ---------- Content ---------- */}
       <main className="mx-auto max-w-6xl px-4 pb-24 sm:px-5">
-        {/* /01 FUNDAMENTALS */}
-        <section id="fundamentals" className="scroll-mt-28 pt-12 md:scroll-mt-40">
+        {/* /01 LEARNING PATH */}
+        <section id="path" className="scroll-mt-28 pt-12 md:scroll-mt-40">
           <SectionHeader
             num="/01"
+            title="Start Here"
+            count={`${pathDone.size} / ${L1_PATH.modules.length} complete`}
+          />
+          <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
+            {"// The rest of this page is a reference library. This is the order to actually learn it in."}
+          </p>
+
+          <div className="mb-5 rounded-lg border-[1.5px] border-ink bg-surface p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h3 className="font-display text-lg font-semibold">{L1_PATH.title}</h3>
+              <span className="mono-label text-muted-2">
+                {L1_PATH.modules.length} modules · ~{Math.round(PATH_TOTAL_MINUTES / 60)} hours
+              </span>
+            </div>
+            <p className="soc-prose mt-2 max-w-(--soc-measure)">{L1_PATH.intro}</p>
+
+            <div className="mt-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="mono-label text-muted-2">Your progress</span>
+                <span className="mono-label text-accent-strong">{pathProgress}%</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-pill bg-surface-alt">
+                <div
+                  className="h-full rounded-pill bg-accent transition-[width] duration-300"
+                  style={{ width: `${pathProgress}%` }}
+                />
+              </div>
+            </div>
+
+            {pathDone.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setPathDone(new Set())}
+                className="mono-label soc-noprint mt-3 text-faint transition-colors hover:text-ink"
+              >
+                reset progress
+              </button>
+            )}
+          </div>
+
+          <Accordion
+            type="single"
+            collapsible
+            value={openPath}
+            onValueChange={(v) => {
+              speech.stop();
+              setOpenPath(v);
+              if (v) keepInView(`item-${v}`);
+            }}
+          >
+            {L1_PATH.modules.map((m) => (
+              <PathModuleCard
+                key={m.id}
+                module={m}
+                done={pathDone.has(m.id)}
+                onToggleDone={() =>
+                  setPathDone((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(m.id)) next.delete(m.id);
+                    else next.add(m.id);
+                    return next;
+                  })
+                }
+                onGoTo={goToRef}
+              />
+            ))}
+          </Accordion>
+        </section>
+
+        {/* /02 FUNDAMENTALS */}
+        <section id="fundamentals" className="scroll-mt-28 pt-12 md:scroll-mt-40">
+          <SectionHeader
+            num="/02"
             title="Fundamentals"
             count={`${visibleQa.length} / ${FUNDAMENTALS.length} shown`}
             action={
@@ -714,10 +885,10 @@ export function SocPrepKit() {
           )}
         </section>
 
-        {/* /02 LOGS */}
+        {/* /03 LOGS */}
         <section id="logs" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/02"
+            num="/03"
             title="Log Analysis"
             count={`${visibleLogs.length} / ${LOG_SOURCES.length} shown`}
           />
@@ -769,9 +940,9 @@ export function SocPrepKit() {
           )}
         </section>
 
-        {/* /03 RESPONSIBILITIES */}
+        {/* /04 RESPONSIBILITIES */}
         <section id="roles" className="scroll-mt-28 pt-14 md:scroll-mt-40">
-          <SectionHeader num="/03" title="Responsibilities" count="What you own at each tier" />
+          <SectionHeader num="/04" title="Responsibilities" count="What you own at each tier" />
           <p className="mt-3 mb-6 font-mono text-[11.5px] text-muted-2">
             {"// Know your own job description before the interview. Answer with what you own, not what the tool does."}
           </p>
@@ -782,10 +953,10 @@ export function SocPrepKit() {
           </div>
         </section>
 
-        {/* /04 SCENARIOS */}
+        {/* /05 SCENARIOS */}
         <section id="scenarios" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/04"
+            num="/05"
             title="50 Scenarios"
             count={`${visibleScenarios.length} / ${SCENARIOS.length} shown`}
           />
@@ -825,10 +996,10 @@ export function SocPrepKit() {
           )}
         </section>
 
-        {/* /05 MALWARE */}
+        {/* /06 MALWARE */}
         <section id="malware" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/05"
+            num="/06"
             title="Malware Analysis"
             count={`${visibleMalware.length} / ${MALWARE.length} shown`}
           />
@@ -857,10 +1028,66 @@ export function SocPrepKit() {
           {visibleMalware.length === 0 && <EmptyNote>No topics match your filter.</EmptyNote>}
         </section>
 
-        {/* /06 PRACTICE QUIZ */}
+        {/* /07 PROJECTS */}
+        <section id="projects" className="scroll-mt-28 pt-14 md:scroll-mt-40">
+          <SectionHeader
+            num="/07"
+            title="Projects"
+            count={`${visibleProjects.length} / ${PROJECTS.length} shown`}
+            action={
+              built.size > 0 ? (
+                <span className="mono-label text-accent-strong">
+                  ✓ {built.size} BUILT
+                </span>
+              ) : undefined
+            }
+          />
+          <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">
+            {"// Build these. Reading gets you through the screening call; having built something gets you the job. Every project is free and runs at home."}
+          </p>
+          <CategoryPills
+            cats={PROJECT_CATS}
+            counts={projectCatCounts}
+            total={PROJECTS.length}
+            active={projectCat}
+            onChange={setProjectCat}
+            label="Filter projects by category"
+          />
+          <Accordion
+            type="single"
+            collapsible
+            value={openProject}
+            onValueChange={(v) => {
+              speech.stop();
+              setOpenProject(v);
+              if (v) keepInView(`item-${v}`);
+            }}
+          >
+            {visibleProjects.map((p) => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                built={built.has(p.id)}
+                onToggleBuilt={() =>
+                  setBuilt((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(p.id)) next.delete(p.id);
+                    else next.add(p.id);
+                    return next;
+                  })
+                }
+              />
+            ))}
+          </Accordion>
+          {visibleProjects.length === 0 && (
+            <EmptyNote>No projects match. Clear the search or pick another filter.</EmptyNote>
+          )}
+        </section>
+
+        {/* /08 PRACTICE QUIZ */}
         <section id="quiz" className="scroll-mt-28 pt-14 md:scroll-mt-40">
           <SectionHeader
-            num="/06"
+            num="/08"
             title="Practice Quiz"
             count={`${MCQ_COUNT} questions`}
           />
@@ -870,9 +1097,9 @@ export function SocPrepKit() {
           <SocQuiz level={level} />
         </section>
 
-        {/* /07 RESOURCES */}
+        {/* /09 RESOURCES */}
         <section id="resources" className="scroll-mt-28 pt-14 md:scroll-mt-40">
-          <SectionHeader num="/07" title="Free Resources" count="All free or free-tier" />
+          <SectionHeader num="/09" title="Free Resources" count="All free or free-tier" />
           <p className="mt-3 mb-6 font-mono text-[11.5px] text-muted-2">
             {"// YouTube channels, hands-on labs, malware sandboxes, and reference sites. Every link is free to use."}
           </p>

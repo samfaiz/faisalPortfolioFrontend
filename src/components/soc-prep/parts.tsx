@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +10,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  FUNDAMENTALS,
   LEVEL_NAMES,
+  MALWARE,
+  SCENARIOS,
   type Fundamental,
   type Level,
   type MalwareTopic,
@@ -21,7 +27,9 @@ import {
   MALWARE_DEFINITIONS,
   SCENARIO_EXPLAINERS,
 } from "@/lib/soc-prep/extras";
-import { PLATFORM_NAMES, type LogSource } from "@/lib/soc-prep/logs";
+import { LOG_SOURCES, PLATFORM_NAMES, type LogSource } from "@/lib/soc-prep/logs";
+import type { PathModule, PathRef } from "@/lib/soc-prep/path";
+import type { Project } from "@/lib/soc-prep/projects";
 import { ListenButton, plainText } from "./speech";
 
 /* Tier + severity tints (vars defined in globals.css, theme-aware). */
@@ -378,6 +386,495 @@ export function FundamentalItem({
         ) : (
           <Html className="soc-prose" html={q.answer} />
         )}
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+const REF_KIND_LABEL: Record<PathRef["kind"], string> = {
+  qa: "Fundamental",
+  lg: "Log",
+  sc: "Scenario",
+  ma: "Malware",
+};
+
+/** The full content of a referenced card, rendered inline inside a module so
+ *  you never lose your place in the path. */
+function RefContent({ refItem }: { refItem: PathRef }) {
+  if (refItem.kind === "qa") {
+    const q = FUNDAMENTALS[Number(refItem.id)];
+    if (!q) return null;
+    const extra = FUNDAMENTAL_EXTRAS[q.question];
+    return (
+      <div className="space-y-4">
+        {extra && (
+          <div className="space-y-1.5">
+            <BlockHeading>Definition</BlockHeading>
+            <Html className="soc-prose" html={extra.definition} />
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <BlockHeading>{extra ? "The interview answer" : "Answer"}</BlockHeading>
+          <Html className="soc-prose" html={q.answer} />
+        </div>
+        {extra && (
+          <div className="space-y-1.5">
+            <BlockHeading>Real-life implementation</BlockHeading>
+            <Html className="soc-prose" html={extra.realWorld} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (refItem.kind === "lg") {
+    const l = LOG_SOURCES.find((x) => x.id === Number(refItem.id));
+    if (!l) return null;
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <BlockHeading>What it records</BlockHeading>
+          <Html className="soc-prose" html={l.what} />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>Where to find it</BlockHeading>
+          <Html className="soc-prose" html={l.where} />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>Sample entry</BlockHeading>
+          <pre className="overflow-x-auto rounded-r-md border-l-2 border-accent bg-panel px-4 py-3.5 font-mono text-[12px] leading-relaxed text-on-dark">
+            {l.sample}
+          </pre>
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>How to read it</BlockHeading>
+          <Html className="soc-prose" html={l.fields} />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>What to look for</BlockHeading>
+          <Html
+            className="soc-prose"
+            html={`<ul>${l.lookFor.map((x) => `<li>${x}</li>`).join("")}</ul>`}
+          />
+        </div>
+        <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3">
+          <span className="mono-label mb-1 block text-accent-strong">Real case</span>
+          <Html className="soc-prose" html={l.scenario} />
+        </div>
+      </div>
+    );
+  }
+
+  if (refItem.kind === "sc") {
+    const s = SCENARIOS.find((x) => x.id === Number(refItem.id));
+    if (!s) return null;
+    const plain = SCENARIO_EXPLAINERS[s.id];
+    return (
+      <div className="space-y-4">
+        {plain && (
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3">
+            <span className="mono-label mb-1 block text-accent-strong">In plain English</span>
+            <Html className="soc-prose" html={plain} />
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <BlockHeading>Situation</BlockHeading>
+          <Html className="soc-prose" html={`<p>${s.situation}</p>`} />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>Task</BlockHeading>
+          <Html className="soc-prose" html={`<p>${s.task}</p>`} />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>Action</BlockHeading>
+          <Html
+            className="soc-prose"
+            html={`<ol>${s.actions.map((a) => `<li>${a}</li>`).join("")}</ol>`}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>Result</BlockHeading>
+          <Html className="soc-prose" html={`<p>${s.result}</p>`} />
+        </div>
+        <div className="space-y-1.5">
+          <BlockHeading>Lessons</BlockHeading>
+          <Html
+            className="soc-prose"
+            html={`<ul>${s.lessons.map((x) => `<li>${x}</li>`).join("")}</ul>`}
+          />
+        </div>
+        <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3">
+          <span className="mono-label mb-1 block text-accent-strong">Likely follow-up</span>
+          <p className="text-[15px] font-medium leading-relaxed text-ink">“{s.followUp}”</p>
+        </div>
+      </div>
+    );
+  }
+
+  const m = MALWARE.find((x) => x.id === String(refItem.id));
+  if (!m) return null;
+  return (
+    <div className="space-y-4">
+      {MALWARE_DEFINITIONS[m.id] && (
+        <div className="space-y-1.5">
+          <BlockHeading>Definition</BlockHeading>
+          <Html className="soc-prose" html={MALWARE_DEFINITIONS[m.id]} />
+        </div>
+      )}
+      <Html className="soc-prose" html={m.body} />
+      <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3">
+        <span className="mono-label mb-1 block text-accent-strong">Real case</span>
+        <Html className="soc-prose" html={`<p>${m.caseStudy}</p>`} />
+      </div>
+    </div>
+  );
+}
+
+/** One numbered step in a module — expands its content in place. */
+function RefStep({
+  refItem,
+  index,
+  onGoTo,
+}: {
+  refItem: PathRef;
+  index: number;
+  onGoTo: (ref: PathRef) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="overflow-hidden rounded-md border border-hairline">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={cn(
+          "group flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-surface-alt/60",
+          open && "border-b border-divider bg-surface-alt/40"
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "font-mono text-[11px] font-bold",
+            open ? "text-accent-strong" : "text-faint group-hover:text-accent-strong"
+          )}
+        >
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <span className="min-w-0 flex-1 text-[14px] text-ink">{refItem.label}</span>
+        <span className="mono-label hidden text-faint sm:inline">
+          {REF_KIND_LABEL[refItem.kind]}
+        </span>
+        <span
+          aria-hidden
+          className={cn(
+            "font-mono text-xs transition-transform",
+            open ? "rotate-180 text-accent-strong" : "text-faint"
+          )}
+        >
+          ⌄
+        </span>
+      </button>
+
+      {open && (
+        <div className="px-3.5 py-4">
+          <RefContent refItem={refItem} />
+          <button
+            type="button"
+            onClick={() => onGoTo(refItem)}
+            className="mono-label soc-noprint mt-4 text-faint transition-colors hover:text-ink"
+          >
+            open in {REF_KIND_LABEL[refItem.kind].toLowerCase()} section ↗
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+export function PathModuleCard({
+  module: m,
+  done,
+  onToggleDone,
+  onGoTo,
+}: {
+  module: PathModule;
+  done: boolean;
+  onToggleDone: () => void;
+  onGoTo: (ref: PathRef) => void;
+}) {
+  return (
+    <AccordionItem value={`pm-${m.id}`} id={`item-pm-${m.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-pill border-[1.5px] font-mono text-[11px] font-bold",
+            done ? "border-accent bg-accent text-paper" : "border-hairline text-muted-2"
+          )}
+          aria-hidden
+        >
+          {done ? "✓" : String(m.id).padStart(2, "0")}
+        </span>
+        <span
+          className={cn(
+            "order-last w-full text-[14.5px] font-medium tracking-[-0.01em] sm:order-none sm:w-auto sm:flex-1",
+            done ? "text-muted-2" : "text-ink"
+          )}
+        >
+          {m.title}
+          {done && <span className="sr-only"> (complete)</span>}
+        </span>
+        <span className="mono-label hidden text-faint lg:inline">{m.minutes} min</span>
+      </AccordionTrigger>
+
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex justify-end">
+          <ListenButton
+            id={`pm-${m.id}`}
+            title={m.title}
+            kind="Study module"
+            getText={() =>
+              [
+                `Module ${m.id}. ${m.title}`,
+                "The goal. " + m.goal,
+                "This module covers. " + m.covers.join(". "),
+                "Your checkpoint. " + m.checkpoint,
+              ].join(". ")
+            }
+          />
+        </div>
+
+        <div className="space-y-5">
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">Goal</span>
+            <p className="soc-prose">{m.goal}</p>
+          </div>
+
+          {m.image && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={m.image}
+              alt={m.imageAlt ?? ""}
+              loading="lazy"
+              className="w-full rounded-md border border-hairline bg-surface-alt"
+              onError={(e) => {
+                // Diagram not added yet — hide the slot rather than showing a broken image.
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+          )}
+
+          <div className="space-y-2">
+            <BlockHeading>What this covers</BlockHeading>
+            <ul className="soc-prose list-disc pl-5">
+              {m.covers.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </div>
+
+          {m.refs.length > 0 && (
+            <div className="space-y-2">
+              <BlockHeading>Work through these, in order</BlockHeading>
+              <p className="mono-label text-faint">Tap a step to read it here</p>
+              <ol className="space-y-2">
+                {m.refs.map((r, i) => (
+                  <RefStep key={`${r.kind}-${r.id}`} refItem={r} index={i} onGoTo={onGoTo} />
+                ))}
+              </ol>
+            </div>
+          )}
+
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">Checkpoint</span>
+            <p className="soc-prose">{m.checkpoint}</p>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleDone}
+            aria-pressed={done}
+            className={cn(
+              "soc-noprint mono-label rounded-pill border-[1.5px]",
+              done ? "border-accent text-accent-strong" : "text-muted-2"
+            )}
+          >
+            {done ? "✓ MODULE COMPLETE" : "MARK MODULE COMPLETE"}
+          </Button>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+export function ProjectCard({
+  project: p,
+  built,
+  onToggleBuilt,
+}: {
+  project: Project;
+  built: boolean;
+  onToggleBuilt: () => void;
+}) {
+  return (
+    <AccordionItem value={`pj-${p.id}`} id={`item-pj-${p.id}`} className={itemClass}>
+      <AccordionTrigger className={triggerClass}>
+        <span
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-pill border-[1.5px] font-mono text-[11px] font-bold",
+            built ? "border-accent bg-accent text-paper" : "border-hairline text-muted-2"
+          )}
+          aria-hidden
+        >
+          {built ? "✓" : String(p.id).padStart(2, "0")}
+        </span>
+        <span
+          className={cn(
+            "order-last w-full text-[14.5px] font-medium tracking-[-0.01em] sm:order-none sm:w-auto sm:flex-1",
+            built ? "text-muted-2" : "text-ink"
+          )}
+        >
+          {p.title}
+          {built && <span className="sr-only"> (built)</span>}
+        </span>
+        <span className="mono-label hidden text-faint xl:inline">{p.hours}</span>
+        <LevelBadge level={p.level} />
+      </AccordionTrigger>
+
+      <AccordionContent forceMount className={contentClass}>
+        <div className="soc-noprint mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-pill border border-hairline px-2 py-0.5 font-mono text-[9.5px] tracking-[0.08em] text-muted-2">
+              {p.category.toUpperCase()}
+            </span>
+            <span className="rounded-pill border border-hairline px-2 py-0.5 font-mono text-[9.5px] tracking-[0.08em] text-muted-2">
+              {p.hours}
+            </span>
+            <span className="rounded-pill border border-accent px-2 py-0.5 font-mono text-[9.5px] tracking-[0.08em] text-accent-strong">
+              {p.cost}
+            </span>
+          </div>
+          <ListenButton
+            id={`pj-${p.id}`}
+            title={p.title}
+            kind="Project"
+            getText={() =>
+              [
+                p.title,
+                p.tagline,
+                "What you end up with. " + plainText(p.outcome),
+                "Why it matters. " + p.proves,
+                "The steps. " +
+                  p.steps.map((s, i) => `Step ${i + 1}. ${s.title}. ${plainText(s.detail)}`).join(" "),
+                "How you know it worked. " + p.validation.map(plainText).join(". "),
+              ].join(". ")
+            }
+          />
+        </div>
+
+        <div className="space-y-5">
+          <p className="soc-prose max-w-(--soc-measure) text-[15px] font-medium text-ink">
+            {p.tagline}
+          </p>
+
+          <div className="space-y-2">
+            <BlockHeading>What you end up with</BlockHeading>
+            <Html className="soc-prose" html={p.outcome} />
+          </div>
+
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">
+              Why it&rsquo;s worth doing
+            </span>
+            <p className="soc-prose">{p.proves}</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <BlockHeading>Stack</BlockHeading>
+              <ul className="flex flex-wrap gap-1.5">
+                {p.stack.map((t) => (
+                  <li
+                    key={t}
+                    className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-muted-2"
+                  >
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <BlockHeading>Before you start</BlockHeading>
+              <Html
+                className="soc-prose"
+                html={`<ul>${p.prerequisites.map((x) => `<li>${x}</li>`).join("")}</ul>`}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <BlockHeading>Step by step</BlockHeading>
+            <ol className="space-y-3">
+              {p.steps.map((s, i) => (
+                <li key={i} className="rounded-md border border-hairline p-4">
+                  <div className="flex items-baseline gap-3">
+                    <span
+                      aria-hidden
+                      className="shrink-0 font-mono text-[11px] font-bold text-accent-strong"
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h4 className="text-[14.5px] font-semibold text-ink">{s.title}</h4>
+                  </div>
+                  <Html className="soc-prose mt-2 pl-8" html={s.detail} />
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>How you know it worked</BlockHeading>
+            <ul className="space-y-2">
+              {p.validation.map((v, i) => (
+                <li key={i} className="flex gap-3">
+                  <span aria-hidden className="mt-0.5 shrink-0 font-mono text-[11px] text-accent-strong">
+                    ☐
+                  </span>
+                  <Html className="soc-prose flex-1" html={v} />
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="max-w-(--soc-measure) rounded-r-md border-l-2 border-accent bg-surface-alt px-4 py-3.5">
+            <span className="mono-label mb-1.5 block text-accent-strong">
+              How to talk about it in the interview
+            </span>
+            <p className="text-[15px] leading-relaxed text-ink">{p.pitch}</p>
+          </div>
+
+          <div className="space-y-2">
+            <BlockHeading>Take it further</BlockHeading>
+            <Html
+              className="soc-prose"
+              html={`<ul>${p.stretch.map((x) => `<li>${x}</li>`).join("")}</ul>`}
+            />
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleBuilt}
+            aria-pressed={built}
+            className={cn(
+              "soc-noprint mono-label rounded-pill border-[1.5px]",
+              built ? "border-accent text-accent-strong" : "text-muted-2"
+            )}
+          >
+            {built ? "✓ BUILT" : "MARK AS BUILT"}
+          </Button>
+        </div>
       </AccordionContent>
     </AccordionItem>
   );
