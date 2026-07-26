@@ -25,6 +25,7 @@ import {
 } from "@/lib/cloud-prep/data";
 import { CLOUD_MCQ_COUNT } from "@/lib/cloud-prep/mcq";
 import { speech, useActiveTopic } from "@/components/soc-prep/speech";
+import { PrintButton } from "@/components/guides/print";
 import { SocAssistant } from "@/components/soc-prep/assistant";
 import { ResourceGroupList } from "@/components/soc-prep/parts";
 import {
@@ -959,9 +960,16 @@ export function CloudPrepKit() {
             title="Projects"
             count={`${visibleProjects.length} / ${CLOUD_PROJECTS.length} shown`}
             action={
-              built.size > 0 ? (
-                <span className="mono-label text-accent-strong">✓ {built.size} BUILT</span>
-              ) : undefined
+              <>
+                {built.size > 0 && (
+                  <span className="mono-label text-accent-strong">✓ {built.size} BUILT</span>
+                )}
+                <PrintButton
+                  scope="projects"
+                  label="PRINT / PDF"
+                  title="Print just the projects, or save them as a PDF"
+                />
+              </>
             }
           />
           <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">

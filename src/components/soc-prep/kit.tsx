@@ -32,6 +32,7 @@ import {
 } from "@/lib/soc-prep/logs";
 import { SocQuiz } from "./quiz";
 import { speech, useActiveTopic } from "./speech";
+import { PrintButton } from "@/components/guides/print";
 import { SocAssistant } from "./assistant";
 import {
   LEARNING_PATHS,
@@ -1036,11 +1037,18 @@ export function SocPrepKit() {
             title="Projects"
             count={`${visibleProjects.length} / ${PROJECTS.length} shown`}
             action={
-              built.size > 0 ? (
-                <span className="mono-label text-accent-strong">
-                  ✓ {built.size} BUILT
-                </span>
-              ) : undefined
+              <>
+                {built.size > 0 && (
+                  <span className="mono-label text-accent-strong">
+                    ✓ {built.size} BUILT
+                  </span>
+                )}
+                <PrintButton
+                  scope="projects"
+                  label="PRINT / PDF"
+                  title="Print just the projects, or save them as a PDF"
+                />
+              </>
             }
           />
           <p className="mt-3 mb-5 font-mono text-[11.5px] text-muted-2">

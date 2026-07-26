@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { GuideCommand, GuideStep, ProjectGuide } from "@/lib/guides/types";
+import { PrintButton, useExpandOnPrint } from "./print";
 
 /* -------------------------------------------------------------------------- */
 /* Shared bits                                                                 */
@@ -96,7 +97,9 @@ function StepCard({
         done ? "border-hairline bg-surface-alt/40" : "border-hairline bg-surface"
       )}
     >
-      <div className="flex flex-wrap items-start gap-3">
+      {/* data-step feeds the print stylesheet, which numbers the step once the
+          tick button is hidden. */}
+      <div className="flex flex-wrap items-start gap-3" data-step={n}>
         <button
           type="button"
           onClick={onToggle}
@@ -235,6 +238,10 @@ export function GuidePage({
   const [done, setDone] = useState<Set<number>>(new Set());
   const [hydrated, setHydrated] = useState(false);
 
+  // Troubleshooting blocks and the glossary are <details>; open them for print
+  // so the PDF is the complete guide, not the collapsed version of it.
+  useExpandOnPrint();
+
   useEffect(() => {
     try {
       const raw = JSON.parse(localStorage.getItem(key) ?? "[]");
@@ -277,12 +284,18 @@ export function GuidePage({
       </div>
 
       <div className="mx-auto max-w-225 px-4 pb-24 pt-10 sm:px-6 md:pt-14">
-        <Link
-          href={chrome.backHref}
-          className="mono-label soc-noprint inline-flex items-center gap-1.5 text-muted-2 transition-colors hover:text-ink"
-        >
-          ← BACK TO {chrome.kitLabel}
-        </Link>
+        <div className="soc-noprint flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href={chrome.backHref}
+            className="mono-label inline-flex items-center gap-1.5 text-muted-2 transition-colors hover:text-ink"
+          >
+            ← BACK TO {chrome.kitLabel}
+          </Link>
+          <PrintButton
+            label="PRINT / SAVE AS PDF"
+            title="Print this guide, or save it as a PDF to follow offline"
+          />
+        </div>
 
         {/* ---- Header ---- */}
         <header className="mt-6 border-b-2 border-ink pb-7">

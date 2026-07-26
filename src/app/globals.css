@@ -545,6 +545,41 @@
 }
 
 @media print {
+  /* Dark mode on paper is unreadable and empties a cartridge, so print always
+     uses a light palette regardless of what the reader is viewing. Every
+     token .dark overrides has to be reset here, not just the obvious ones —
+     .soc-prose reads --muted, and missing it leaves body copy in the dark
+     theme's near-white on white paper. */
+  :root,
+  .dark {
+    --paper: #ffffff;
+    --surface: #ffffff;
+    --surface-alt: #f4f3ee;
+    --ink: #000000;
+    --panel: #ffffff;
+    --muted: #1a1a1a;
+    --muted-2: #333333;
+    --faint: #595959;
+    --hairline: #999999;
+    --divider: #cccccc;
+    --accent: #14713f;
+    --accent-strong: #0d5c31;
+    --accent-soft: #14713f;
+    --on-dark: #000000;
+    --on-dark-muted: #333333;
+    --on-dark-faint: #595959;
+    --scanline: transparent;
+    --soc-l1: #8a5300;
+    --soc-l2: #14507d;
+    --soc-l3: #6b2d80;
+    --cloud-associate: #14713f;
+    --cloud-engineer: #14507d;
+    --cloud-architect: #6b2d80;
+    --cloud-aws: #8a5300;
+    --cloud-azure: #14507d;
+    --cloud-gcp: #a52424;
+  }
+
   .soc-noprint {
     display: none !important;
   }
@@ -569,5 +604,65 @@
     content: " (" attr(href) ")";
     font-size: 8pt;
     color: var(--muted-2);
+  }
+
+  /* --- Print one section only ------------------------------------------
+     printSection() marks the target and flags the body. Hide the page chrome
+     and the sibling sections, and leave the target's own subtree completely
+     alone — reverting display on descendants would resurrect every
+     `hidden sm:inline` element and print things twice. */
+  body[data-print-scope] .soc-page > *:not(main) {
+    display: none !important;
+  }
+  body[data-print-scope] .soc-page main > *:not([data-print-target]) {
+    display: none !important;
+  }
+  /* Sole visible section, so no leading blank page. */
+  body[data-print-scope] [data-print-target] {
+    break-before: avoid !important;
+    padding-top: 0 !important;
+  }
+
+  /* --- Project guide pages --------------------------------------------- */
+
+  /* Code must wrap. On screen these scroll horizontally; on paper anything
+     past the right margin is simply lost, which would silently truncate
+     commands the reader is meant to copy. */
+  pre {
+    white-space: pre-wrap !important;
+    word-break: break-word;
+    break-inside: avoid;
+    font-size: 8.5pt;
+    line-height: 1.45;
+  }
+
+  /* Keep a step and its commands together where the page allows it. */
+  li[id^="step-"] {
+    break-inside: avoid;
+  }
+
+  /* The tick button is hidden in print, so surface the step number instead. */
+  li[id^="step-"] > div:first-child::before {
+    content: attr(data-step) ". ";
+    font-weight: 700;
+  }
+
+  /* Opened <details> print as a labelled block rather than a widget. */
+  details {
+    break-inside: avoid;
+  }
+  details > summary {
+    list-style: none;
+    font-weight: 700;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Backgrounds carry meaning here — the amber cost warnings and the green
+     checkpoints are the two things a reader scans for. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
