@@ -45,6 +45,11 @@ const turnstileApi = () =>
 let tsWidgetId: string | null = null;
 let tsToken: string | null = null;
 let tsWaiters: ((token: string | null) => void)[] = [];
+/* Set when the widget can't run at all — a malformed site key, a domain the
+ * widget isn't registered for, a blocked challenges.cloudflare.com. Without
+ * this every question would stall for the full token timeout before giving up,
+ * which looks exactly like a hung assistant. */
+let tsBroken = false;
 
 function tsResetWidget() {
   tsToken = null;
@@ -64,7 +69,7 @@ function tsOnToken(token: string) {
 }
 
 async function takeTurnstileToken(timeoutMs = 8000): Promise<string | null> {
-  if (!TURNSTILE_SITE_KEY) return null;
+  if (!TURNSTILE_SITE_KEY || tsBroken) return null;
   if (tsToken) {
     const token = tsToken;
     tsResetWidget();
@@ -885,16 +890,26 @@ function TurnstileWidget({ siteKey }: { siteKey: string }) {
   useEffect(() => {
     const render = () => {
       const api = turnstileApi();
-      if (!ref.current || !api || tsWidgetId) return;
-      tsWidgetId = api.render(ref.current, {
-        sitekey: siteKey,
-        callback: tsOnToken,
-        // An expired or errored challenge leaves us with no token; reset so the
-        // next question waits on a fresh one instead of sending nothing.
-        "expired-callback": tsResetWidget,
-        "error-callback": tsResetWidget,
-        theme: "auto",
-      });
+      if (!ref.current || !api || tsWidgetId || tsBroken) return;
+      try {
+        tsWidgetId = api.render(ref.current, {
+          sitekey: siteKey,
+          callback: tsOnToken,
+          // An expired or errored challenge leaves us with no token; reset so
+          // the next question waits on a fresh one instead of sending nothing.
+          "expired-callback": tsResetWidget,
+          "error-callback": tsResetWidget,
+          theme: "auto",
+        });
+      } catch (err) {
+        // render() throws on a malformed site key. Fall back to sending no
+        // token rather than blocking the assistant behind a widget that will
+        // never solve — the API's rate and spend caps still apply.
+        console.error("[turnstile] disabled — widget failed to render", err);
+        tsBroken = true;
+        tsWidgetId = null;
+        tsWaiters.splice(0).forEach((w) => w(null));
+      }
     };
     if (turnstileApi()) {
       render();
