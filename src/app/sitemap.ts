@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { api } from "@/lib/api";
+import { CLOUD_GUIDES } from "@/lib/cloud-prep/guides";
+import { SOC_GUIDES } from "@/lib/soc-prep/guides";
 
 const SITE = "https://faisalkhan.dev";
 
@@ -21,5 +23,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
   }));
 
-  return [...staticRoutes, ...postRoutes, ...projectRoutes];
+  // One entry per project walkthrough. These are the deepest pages on the
+  // site and the ones most likely to be found by search, so they belong here
+  // rather than relying on discovery through the kit pages.
+  const guideRoutes = [
+    ...SOC_GUIDES.map((g) => `/soc-prep/projects/${g.slug}`),
+    ...CLOUD_GUIDES.map((g) => `/cloud-security-prep/projects/${g.slug}`),
+  ].map((path) => ({
+    url: `${SITE}${path}`,
+    lastModified: new Date(),
+  }));
+
+  return [...staticRoutes, ...guideRoutes, ...postRoutes, ...projectRoutes];
 }

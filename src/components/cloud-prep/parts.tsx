@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -876,10 +878,13 @@ export function CloudProjectCard({
   project: p,
   built,
   onToggleBuilt,
+  guideSlug,
 }: {
   project: CloudProject;
   built: boolean;
   onToggleBuilt: () => void;
+  /** Set when a full step-by-step walkthrough page exists for this project. */
+  guideSlug?: string;
 }) {
   return (
     <AccordionItem value={`cpj-${p.id}`} id={`item-cpj-${p.id}`} className={itemClass}>
@@ -981,6 +986,25 @@ export function CloudProjectCard({
               />
             </div>
           </div>
+
+          {guideSlug && (
+            <Link
+              href={`/cloud-security-prep/projects/${guideSlug}`}
+              className="soc-noprint flex items-center justify-between gap-3 rounded-md border-[1.5px] border-accent bg-accent/5 px-4 py-3.5 transition-colors hover:bg-accent/10"
+            >
+              <span>
+                <span className="mono-label block text-accent-strong">
+                  FULL WALKTHROUGH
+                </span>
+                <span className="text-[13.5px] text-muted-2">
+                  Every command, what you should see, and what to do when it breaks.
+                </span>
+              </span>
+              <span aria-hidden className="font-mono text-[18px] text-accent-strong">
+                →
+              </span>
+            </Link>
+          )}
 
           <div className="space-y-3">
             <BlockHeading>Step by step</BlockHeading>

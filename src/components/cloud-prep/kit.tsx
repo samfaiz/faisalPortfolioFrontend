@@ -32,6 +32,7 @@ import {
   CLOUD_PATH_TOTAL_MINUTES,
   type CloudPathRef,
 } from "@/lib/cloud-prep/path";
+import { cloudGuideSlug } from "@/lib/cloud-prep/guides";
 import {
   CLOUD_PROJECTS,
   CLOUD_PROJECT_CATS,
@@ -987,6 +988,7 @@ export function CloudPrepKit() {
               <CloudProjectCard
                 key={p.id}
                 project={p}
+                guideSlug={cloudGuideSlug(p.id)}
                 built={built.has(p.id)}
                 onToggleBuilt={() =>
                   setBuilt((prev) => {

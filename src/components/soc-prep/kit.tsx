@@ -39,6 +39,7 @@ import {
   type PathRef,
 } from "@/lib/soc-prep/path";
 import { PROJECTS, PROJECT_CATS, PROJECT_COUNT } from "@/lib/soc-prep/projects";
+import { socGuideSlug } from "@/lib/soc-prep/guides";
 import {
   EmptyNote,
   FundamentalItem,
@@ -1067,6 +1068,7 @@ export function SocPrepKit() {
               <ProjectCard
                 key={p.id}
                 project={p}
+                guideSlug={socGuideSlug(p.id)}
                 built={built.has(p.id)}
                 onToggleBuilt={() =>
                   setBuilt((prev) => {
