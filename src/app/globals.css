@@ -46,6 +46,11 @@
   --cloud-azure: oklch(0.53 0.13 245);
   --cloud-gcp: oklch(0.55 0.14 25);
 
+  /* SEO-prep level tints (Junior/Mid/Senior), light. */
+  --seo-junior: oklch(0.55 0.13 195);
+  --seo-mid: oklch(0.52 0.13 285);
+  --seo-senior: oklch(0.53 0.14 15);
+
   /*
     shadcn/ui semantic tokens, mapped onto the Ledger design system above so
     every shadcn component automatically matches the site (and flips with .dark
@@ -102,6 +107,10 @@
   --cloud-aws: oklch(0.78 0.12 60);
   --cloud-azure: oklch(0.74 0.12 245);
   --cloud-gcp: oklch(0.75 0.13 25);
+
+  --seo-junior: oklch(0.76 0.11 195);
+  --seo-mid: oklch(0.74 0.12 285);
+  --seo-senior: oklch(0.75 0.12 15);
 
   /* shadcn tokens are var() references to the Ledger tokens (see :root), so
      they flip automatically in dark mode. Only literal values need overriding. */
@@ -578,6 +587,9 @@
     --cloud-aws: #8a5300;
     --cloud-azure: #14507d;
     --cloud-gcp: #a52424;
+    --seo-junior: #0f5f6e;
+    --seo-mid: #4a3a9e;
+    --seo-senior: #9c2b33;
   }
 
   .soc-noprint {

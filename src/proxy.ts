@@ -11,6 +11,7 @@ const ALIASES: Record<string, string> = {
   "/soc-prep": "/soc-prep",
   "/cloud-security-prep": "/cloud-security-prep",
   "/cloudsecurity-prep": "/cloud-security-prep", // e.g. /CloudSecurity-prep
+  "/seo-prep": "/seo-prep", // e.g. /SEO-prep
 };
 
 export function proxy(request: NextRequest) {

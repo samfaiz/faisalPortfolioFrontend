@@ -173,7 +173,11 @@ interface Turn {
 }
 type Status = "idle" | "recording" | "thinking" | "answering";
 
-export function SocAssistant({ domain = "soc" }: { domain?: "soc" | "cloud" }) {
+export function SocAssistant({
+  domain = "soc",
+}: {
+  domain?: "soc" | "cloud" | "seo";
+}) {
   const topic = useActiveTopic();
   const speakingId = useSpeakingId();
   const speaking = speakingId !== null;
