@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { api } from "@/lib/api";
 import { LiveViewer } from "@/components/live-viewer";
+import { CaseStudyView } from "@/components/case-study";
+import { guideForProject } from "@/lib/guide-link";
 import { JsonLd } from "@/components/json-ld";
 import { buildMetadata, faqJsonLd } from "@/lib/seo";
 import { projectJsonLd, projectBreadcrumbJsonLd } from "@/lib/project";
@@ -62,8 +64,17 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
           </div>
         )}
 
+        {/* Lab work has no URL to frame, so a filled-in case study replaces the
+            live viewer entirely rather than sitting under an empty one. */}
         <div className="mt-8">
-          <LiveViewer projects={[project]} />
+          {project.case_study ? (
+            <CaseStudyView
+              caseStudy={project.case_study}
+              guide={guideForProject(project)}
+            />
+          ) : (
+            <LiveViewer projects={[project]} />
+          )}
         </div>
 
         {(project.seo?.faq?.length ?? 0) > 0 && (

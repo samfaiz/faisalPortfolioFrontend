@@ -18,6 +18,30 @@ export interface Cta {
 export type ProjectCategory = "all" | "cyber-sec" | "web-dev" | "web-apps";
 export type PostCategory = "all" | "security" | "ai-dev" | "ctf";
 
+/** One step of a lab walkthrough: what was done, the screenshot, the artefact. */
+export interface CaseStudyStep {
+  title: string;
+  body: string;
+  image: string | null;
+  caption?: string | null;
+  /** The actual query, command, or log line behind the screenshot. */
+  evidence?: { lang?: string | null; code: string } | null;
+}
+
+/**
+ * Set on projects with nothing to render live — lab work, where the story is
+ * the sequence rather than a single view. Its presence is what switches the
+ * project page from the live viewer to the walkthrough.
+ */
+export interface CaseStudy {
+  objective?: string | null;
+  stack: string[];
+  steps: CaseStudyStep[];
+  outcome?: string | null;
+  /** Slug of the matching prep-kit walkthrough, if one was written. */
+  guide_slug?: string | null;
+}
+
 export interface Project {
   id: number;
   title: string;
@@ -28,6 +52,7 @@ export interface Project {
   allow_iframe: boolean;
   preview_video?: string | null;
   preview_image?: string | null;
+  case_study?: CaseStudy | null;
   tags: string[];
   thumbnail?: MediaRef | null;
   featured: boolean;

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { api } from "@/lib/api";
+import { projectForGuide } from "@/lib/guide-link";
 import { GuidePage } from "@/components/guides/guide-page";
 import { TIER_NAMES } from "@/lib/cloud-prep/data";
 import { CLOUD_GUIDES } from "@/lib/cloud-prep/guides";
@@ -50,6 +52,11 @@ export default async function CloudProjectGuidePage({
   const found = resolve(slug);
   if (!found) notFound();
 
+  // A portfolio project may document having actually built this. The API
+  // client falls back to an empty list if it is unreachable, so a build
+  // without the API simply omits the link rather than failing.
+  const built = projectForGuide(await api.projects(), slug);
+
   const { guide, project } = found;
 
   return (
@@ -58,6 +65,9 @@ export default async function CloudProjectGuidePage({
       chrome={{
         kitLabel: "CLOUD SEC.",
         backHref: "/cloud-security-prep#projects",
+        builtProject: built
+          ? { title: built.title, href: `/projects/${built.slug}` }
+          : null,
         projectNumber: project.id,
         title: project.title,
         tagline: project.tagline,

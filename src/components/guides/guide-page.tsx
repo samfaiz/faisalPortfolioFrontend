@@ -211,6 +211,11 @@ export interface GuideChrome {
   kitLabel: string;
   /** Back link to the kit's projects section. */
   backHref: string;
+  /**
+   * Set when a portfolio project documents having actually built this. Turns
+   * the guide from instructions into evidence — "and here is me doing it".
+   */
+  builtProject?: { title: string; href: string } | null;
   /** Project metadata rendered in the header. */
   projectNumber: number;
   title: string;
@@ -321,6 +326,25 @@ export function GuidePage({
           <p className="mono-label mt-4 inline-block rounded-md border border-(--soc-l1) bg-(--soc-l1)/10 px-3 py-2 text-(--soc-l1)">
             COST — {chrome.cost.replace(/<\/?b>/g, "")}
           </p>
+
+          {chrome.builtProject && (
+            <Link
+              href={chrome.builtProject.href}
+              className="soc-noprint mt-4 flex items-center justify-between gap-3 rounded-md border-[1.5px] border-accent bg-accent/5 px-4 py-3 transition-colors hover:bg-accent/10"
+            >
+              <span>
+                <span className="mono-label block text-accent-strong">
+                  I BUILT THIS
+                </span>
+                <span className="text-[13.5px] text-muted-2">
+                  Screenshots and write-up: {chrome.builtProject.title}
+                </span>
+              </span>
+              <span aria-hidden className="font-mono text-[18px] text-accent-strong">
+                →
+              </span>
+            </Link>
+          )}
         </header>
 
         {/* ---- Orientation ---- */}
