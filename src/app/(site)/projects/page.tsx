@@ -20,12 +20,6 @@ export default async function ProjectsPage() {
   const [projects, seo] = await Promise.all([api.projects(), fetchPageSeo("projects")]);
   const faq = faqJsonLd(seo?.faq);
 
-  // Case-study projects are lab work with no deployed site, so they have no
-  // business in a viewer headed "TRY THEM LIVE". Left in, the viewer told
-  // visitors "this site blocks in-page framing" — describing a site that does
-  // not exist. They still get a card below and their own full page.
-  const liveProjects = projects.filter((p) => !p.case_study);
-
   return (
     <>
       {seo?.json_ld?.length ? <JsonLd data={seo.json_ld} /> : null}
@@ -33,7 +27,9 @@ export default async function ProjectsPage() {
       <PageHeader line1="TRY THEM" line2="LIVE." breadcrumb="~/projects" />
       <section className="px-4 py-10 sm:px-5">
         <div className="mx-auto max-w-6xl">
-          {liveProjects.length > 0 && <LiveViewer projects={liveProjects} />}
+          {/* Every project gets a card. LiveViewer decides internally which
+              ones can be previewed — case studies link to their page instead. */}
+          <LiveViewer projects={projects} />
 
           {projects.length > 0 && (
             <nav className="mt-8 border-t border-divider pt-6">

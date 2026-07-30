@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project, ProjectCategory } from "@/lib/types";
 
@@ -27,21 +28,39 @@ const hasPreview = (p: Project | null) =>
 
 const canFrame = (p: Project | null) => Boolean(p && p.allow_iframe && p.url);
 
+/**
+ * A case study is lab work with no deployed site. It gets a card like anything
+ * else, but it can never be loaded into the preview pane — doing so reported
+ * "this site blocks in-page framing", describing a site that does not exist.
+ */
+const isCaseStudy = (p: Project | null) => Boolean(p?.case_study);
+
 /** What to show first: a demo preview if one exists, else the live frame. */
 const defaultMode = (p: Project | null): Mode =>
   hasPreview(p) ? "preview" : canFrame(p) ? "live" : "preview";
 
 export function LiveViewer({ projects }: { projects: Project[] }) {
   const [category, setCategory] = useState<ProjectCategory>("all");
+
+  /** Cards: everything in the chosen category. */
   const visible = useMemo(
     () => projects.filter((p) => category === "all" || p.category === category),
     [projects, category],
   );
 
-  const [activeId, setActiveId] = useState<number | null>(projects[0]?.id ?? null);
-  const active = projects.find((p) => p.id === activeId) ?? visible[0] ?? projects[0] ?? null;
+  /** Preview pane: only what can actually be shown. */
+  const previewable = useMemo(() => visible.filter((p) => !isCaseStudy(p)), [visible]);
+  const firstPreviewable = projects.find((p) => !isCaseStudy(p)) ?? null;
 
-  const [mode, setMode] = useState<Mode>(defaultMode(projects[0] ?? null));
+  const [activeId, setActiveId] = useState<number | null>(firstPreviewable?.id ?? null);
+
+  // Resolve against `previewable`, which is already scoped to the chosen
+  // category. That does two things at once: a case study can never land in the
+  // pane, and switching category drops a selection that is no longer in it —
+  // previously picking CYBER SEC left a web-apps site loaded in the frame.
+  const active = previewable.find((p) => p.id === activeId) ?? previewable[0] ?? null;
+
+  const [mode, setMode] = useState<Mode>(defaultMode(firstPreviewable));
   const [state, setState] = useState<LoadState>("loading");
   const [isFull, setIsFull] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -105,10 +124,12 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
 
   // Position + prev/next so mobile users can tell there are multiple projects
   // and cycle through them without hunting for the cards below the tall frame.
-  const activeIndex = Math.max(0, visible.findIndex((p) => p.id === active?.id));
+  // Cycles previewable projects only — stepping onto a case study would put
+  // something unloadable in the pane.
+  const activeIndex = Math.max(0, previewable.findIndex((p) => p.id === active?.id));
   const go = (dir: number) => {
-    if (visible.length < 2) return;
-    select(visible[(activeIndex + dir + visible.length) % visible.length]);
+    if (previewable.length < 2) return;
+    select(previewable[(activeIndex + dir + previewable.length) % previewable.length]);
   };
 
   return (
@@ -130,7 +151,9 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
         ))}
       </div>
 
-      {/* Viewer frame */}
+      {/* Viewer frame — omitted when the chosen category is all case studies,
+          which have nothing to load into it. */}
+      {previewable.length > 0 && (
       <div
         ref={frameRef}
         className={`shadow-offset flex flex-col overflow-hidden border-ink bg-surface ${
@@ -209,9 +232,10 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
           )}
         </div>
       </div>
+      )}
 
       {/* Prev / next + counter — makes multiple projects obvious on mobile */}
-      {visible.length > 1 && (
+      {previewable.length > 1 && (
         <div className="mt-4 flex items-center gap-3">
           <button
             onClick={() => go(-1)}
@@ -221,7 +245,7 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
             ←
           </button>
           <span className="mono-label tabular-nums text-muted-2">
-            {activeIndex + 1} / {visible.length} PROJECTS
+            {activeIndex + 1} / {previewable.length} PROJECTS
           </span>
           <button
             onClick={() => go(1)}
@@ -240,21 +264,15 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
         className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 md:mt-5 md:grid md:grid-cols-3 md:overflow-visible md:pb-0"
       >
         {visible.map((p) => {
-          const isActive = p.id === active?.id;
-          return (
-            <button
-              key={p.id}
-              data-active={isActive}
-              onClick={() => select(p)}
-              className={`w-[82%] shrink-0 snap-center rounded-md border-[1.5px] p-4 text-left transition-colors md:w-auto md:shrink ${
-                isActive
-                  ? "border-accent bg-accent/10"
-                  : "border-hairline bg-surface hover:border-ink"
-              }`}
-            >
-              <div className="mono-label flex items-center justify-between text-faint">
+          const caseStudy = isCaseStudy(p);
+          const isActive = !caseStudy && p.id === active?.id;
+
+          const body = (
+            <>
+              <div className="mono-label flex items-center justify-between gap-2 text-faint">
                 <span>{p.category.replace("-", " ")}</span>
                 {isActive && <span className="text-accent">▸ NOW SHOWING</span>}
+                {caseStudy && <span className="text-accent-strong">CASE STUDY →</span>}
               </div>
               <div className="mt-2 font-display text-lg font-semibold text-ink">{p.title}</div>
               <p className="mt-1 text-[13px] leading-relaxed text-muted-2">{p.description}</p>
@@ -265,6 +283,34 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
                   </span>
                 ))}
               </div>
+            </>
+          );
+
+          const shared =
+            "w-[82%] shrink-0 snap-center rounded-md border-[1.5px] p-4 text-left transition-colors md:w-auto md:shrink";
+
+          // Lab work has nothing to load into the pane, so its card goes
+          // straight to the walkthrough rather than selecting a dead preview.
+          return caseStudy ? (
+            <Link
+              key={p.id}
+              href={`/projects/${p.slug}`}
+              className={`${shared} block border-hairline bg-surface hover:border-ink`}
+            >
+              {body}
+            </Link>
+          ) : (
+            <button
+              key={p.id}
+              data-active={isActive}
+              onClick={() => select(p)}
+              className={`${shared} ${
+                isActive
+                  ? "border-accent bg-accent/10"
+                  : "border-hairline bg-surface hover:border-ink"
+              }`}
+            >
+              {body}
             </button>
           );
         })}
