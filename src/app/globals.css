@@ -445,6 +445,61 @@
     font-family: var(--font-mono);
     font-size: 0.85em;
   }
+
+  /* Headings. The prep-kit content never used these — it builds its own
+     section headers — but the CMS rich editor emits h1/h2/h3, and without
+     these they render at body size and read as a stray bold line. */
+  .soc-prose h1,
+  .soc-prose h2,
+  .soc-prose h3,
+  .soc-prose h4 {
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-top: 1.6em;
+    margin-bottom: 0.5em;
+  }
+  .soc-prose h1 {
+    font-size: 1.7em;
+  }
+  .soc-prose h2 {
+    font-size: 1.4em;
+  }
+  .soc-prose h3 {
+    font-size: 1.15em;
+  }
+  .soc-prose h4 {
+    font-size: 1em;
+  }
+  .soc-prose :is(h1, h2, h3, h4):first-child {
+    margin-top: 0;
+  }
+
+  /* Links from the rich editor — the kit content styles its own inline. */
+  .soc-prose a {
+    color: var(--accent-strong);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .soc-prose a:hover {
+    color: var(--ink);
+  }
+
+  .soc-prose blockquote {
+    border-left: 2px solid var(--accent);
+    padding-left: 1em;
+    margin: 1.2em 0;
+    color: var(--muted-2);
+    font-style: italic;
+  }
+
+  .soc-prose hr {
+    border: 0;
+    border-top: 1px solid var(--divider);
+    margin: 1.8em 0;
+  }
   .soc-prose b {
     color: var(--ink);
     font-weight: 600;

@@ -17,7 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ProjectsPage() {
-  const [projects, seo] = await Promise.all([api.projects(), fetchPageSeo("projects")]);
+  const [projects, categories, seo] = await Promise.all([
+    api.projects(),
+    api.projectCategories(),
+    fetchPageSeo("projects"),
+  ]);
   const faq = faqJsonLd(seo?.faq);
 
   return (
@@ -29,7 +33,7 @@ export default async function ProjectsPage() {
         <div className="mx-auto max-w-6xl">
           {/* Every project gets a card. LiveViewer decides internally which
               ones can be previewed — case studies link to their page instead. */}
-          <LiveViewer projects={projects} />
+          <LiveViewer projects={projects} categories={categories} />
 
           {projects.length > 0 && (
             <nav className="mt-8 border-t border-divider pt-6">

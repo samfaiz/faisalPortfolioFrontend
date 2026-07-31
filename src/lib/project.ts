@@ -38,3 +38,19 @@ export function projectBreadcrumbJsonLd(project: Project, siteUrl: string): Reco
     ],
   };
 }
+
+/**
+ * The picture that represents a project outside its own page — the grid card
+ * and the social share preview.
+ *
+ * Order: the hero when it has been marked as the display image, then an
+ * explicit thumbnail, then the preview screenshot, then the first case-study
+ * screenshot. That last fallback matters for lab projects, which often have
+ * screenshots but no dedicated thumbnail.
+ */
+export function displayImage(p: Project): string | null {
+  if (p.hero_is_display && p.hero_image) return p.hero_image;
+  if (p.thumbnail?.url) return p.thumbnail.url;
+  if (p.preview_image) return p.preview_image;
+  return p.case_study?.steps.find((s) => s.image)?.image ?? null;
+}

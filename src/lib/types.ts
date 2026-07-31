@@ -15,7 +15,13 @@ export interface Cta {
   href: string;
 }
 
-export type ProjectCategory = "all" | "cyber-sec" | "web-dev" | "web-apps";
+/** Category slugs come from the CMS now, so this is any string plus "all". */
+export type ProjectCategory = "all" | (string & {});
+
+export interface ProjectCategoryOption {
+  slug: string;
+  label: string;
+}
 export type PostCategory = "all" | "security" | "ai-dev" | "ctf";
 
 /** One step of a lab walkthrough: what was done, the screenshot, the artefact. */
@@ -46,12 +52,18 @@ export interface Project {
   id: number;
   title: string;
   slug: string;
-  category: Exclude<ProjectCategory, "all">;
+  category: string;
   description: string;
+  /** Rich text for the project page body. Plain description stays for cards + SEO. */
+  body_html?: string | null;
   url: string | null;
+  repo_url?: string | null;
   allow_iframe: boolean;
   preview_video?: string | null;
   preview_image?: string | null;
+  hero_image?: string | null;
+  /** Hero doubles as the grid card image and the social preview. */
+  hero_is_display?: boolean;
   case_study?: CaseStudy | null;
   tags: string[];
   thumbnail?: MediaRef | null;

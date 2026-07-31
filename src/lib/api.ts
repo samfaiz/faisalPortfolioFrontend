@@ -13,6 +13,7 @@ import type {
   HeroSection,
   Post,
   Project,
+  ProjectCategoryOption,
   SiteSection,
   SiteSettings,
   SkillGroup,
@@ -70,6 +71,14 @@ export const api = {
       groups: fallback.skills as SkillGroup[],
     }),
   projects: () => get<Project[]>("/projects", fallback.projects),
+  projectCategories: () =>
+    get<ProjectCategoryOption[]>("/project-categories", [
+      // Only used if the API is unreachable at build time.
+      { slug: "cyber-sec", label: "Cyber Security" },
+      { slug: "cyber-security-tools", label: "Cyber Security Tools" },
+      { slug: "web-dev", label: "Web Dev" },
+      { slug: "web-apps", label: "Web Apps" },
+    ]),
   project: (slug: string) =>
     get<Project | null>(`/projects/${slug}`, fallback.projects.find((p) => p.slug === slug) ?? null),
   posts: () => get<Post[]>("/posts", fallback.posts),

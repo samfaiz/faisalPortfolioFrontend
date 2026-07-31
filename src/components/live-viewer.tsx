@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Project, ProjectCategory } from "@/lib/types";
-
-const FILTERS: { label: string; value: ProjectCategory }[] = [
-  { label: "ALL", value: "all" },
-  { label: "CYBER SEC", value: "cyber-sec" },
-  { label: "WEB DEV", value: "web-dev" },
-  { label: "WEB APPS", value: "web-apps" },
-];
+import type {
+  Project,
+  ProjectCategory,
+  ProjectCategoryOption,
+} from "@/lib/types";
+import { displayImage } from "@/lib/project";
 
 type Mode = "preview" | "live";
 type LoadState = "loading" | "ready" | "blocked";
@@ -28,19 +26,50 @@ const hasPreview = (p: Project | null) =>
 
 const canFrame = (p: Project | null) => Boolean(p && p.allow_iframe && p.url);
 
-/**
- * A case study is lab work with no deployed site. It gets a card like anything
- * else, but it can never be loaded into the preview pane — doing so reported
- * "this site blocks in-page framing", describing a site that does not exist.
- */
+/** Lab work: no deployed site, but screenshots to show instead of an iframe. */
 const isCaseStudy = (p: Project | null) => Boolean(p?.case_study);
+
+/** Every screenshot a case study has, in step order, for the shuffle preview. */
+const caseStudyShots = (p: Project | null): string[] => {
+  const steps = p?.case_study?.steps ?? [];
+  const shots = steps.map((s) => s.image).filter((s): s is string => Boolean(s));
+  // The standalone preview image counts too — some projects have one without
+  // having filled in any steps yet.
+  return p?.preview_image && !shots.includes(p.preview_image)
+    ? [p.preview_image, ...shots]
+    : shots;
+};
+
+/** A case study can fill the pane if it has at least one picture to show. */
+const hasShots = (p: Project | null) => caseStudyShots(p).length > 0;
 
 /** What to show first: a demo preview if one exists, else the live frame. */
 const defaultMode = (p: Project | null): Mode =>
   hasPreview(p) ? "preview" : canFrame(p) ? "live" : "preview";
 
-export function LiveViewer({ projects }: { projects: Project[] }) {
+/** Anything with a frameable site, a video, or screenshots can fill the pane. */
+const canPreview = (p: Project) =>
+  canFrame(p) || hasPreview(p) || (isCaseStudy(p) && hasShots(p));
+
+export function LiveViewer({
+  projects,
+  categories,
+}: {
+  projects: Project[];
+  categories: ProjectCategoryOption[];
+}) {
   const [category, setCategory] = useState<ProjectCategory>("all");
+
+  const filters = useMemo(
+    () => [
+      { label: "ALL", value: "all" as ProjectCategory },
+      ...categories.map((c) => ({
+        label: c.label.toUpperCase(),
+        value: c.slug as ProjectCategory,
+      })),
+    ],
+    [categories],
+  );
 
   /** Cards: everything in the chosen category. */
   const visible = useMemo(
@@ -48,16 +77,15 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
     [projects, category],
   );
 
-  /** Preview pane: only what can actually be shown. */
-  const previewable = useMemo(() => visible.filter((p) => !isCaseStudy(p)), [visible]);
-  const firstPreviewable = projects.find((p) => !isCaseStudy(p)) ?? null;
+  /** Pane: whatever has something to show — a site, a video, or screenshots. */
+  const previewable = useMemo(() => visible.filter(canPreview), [visible]);
+  const firstPreviewable = projects.find(canPreview) ?? null;
 
   const [activeId, setActiveId] = useState<number | null>(firstPreviewable?.id ?? null);
 
-  // Resolve against `previewable`, which is already scoped to the chosen
-  // category. That does two things at once: a case study can never land in the
-  // pane, and switching category drops a selection that is no longer in it —
-  // previously picking CYBER SEC left a web-apps site loaded in the frame.
+  // Resolved against `previewable`, which is already scoped to the chosen
+  // category — so switching category drops a selection no longer in it.
+  // Previously picking CYBER SEC left a web-apps site loaded in the frame.
   const active = previewable.find((p) => p.id === activeId) ?? previewable[0] ?? null;
 
   const [mode, setMode] = useState<Mode>(defaultMode(firstPreviewable));
@@ -136,7 +164,7 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
     <div>
       {/* Filter pills */}
       <div className="mb-5 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+        {filters.map((f) => (
           <button
             key={f.value}
             onClick={() => setCategory(f.value)}
@@ -163,9 +191,20 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
         {/* Header bar — compacts to icons on mobile so it never overflows */}
         <div className="flex items-center gap-2 border-b-[1.5px] border-hairline bg-surface-alt px-3 py-2.5 sm:gap-3 sm:px-4">
           <span className="shrink-0 text-accent" aria-hidden>●</span>
-          <span className="mono-label min-w-0 flex-1 truncate text-muted">{domainOf(active?.url)}</span>
+          {/* A case study has no domain, so name what it is instead of "—". */}
+          <span className="mono-label min-w-0 flex-1 truncate text-muted">
+            {isCaseStudy(active)
+              ? `${caseStudyShots(active).length} SCREENSHOT${
+                  caseStudyShots(active).length === 1 ? "" : "S"
+                }`
+              : domainOf(active?.url)}
+          </span>
           <span className="mono-label hidden shrink-0 text-faint lg:inline">
-            {showLive ? "RUNNING LIVE IN-PAGE" : "DEMO PREVIEW"}
+            {isCaseStudy(active)
+              ? "CASE STUDY"
+              : showLive
+                ? "RUNNING LIVE IN-PAGE"
+                : "DEMO PREVIEW"}
           </span>
 
           {/* Toggle between preview and live when both are available */}
@@ -265,14 +304,30 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
       >
         {visible.map((p) => {
           const caseStudy = isCaseStudy(p);
-          const isActive = !caseStudy && p.id === active?.id;
+          // A case study with screenshots is selectable like anything else, so
+          // it can be the active card; one without only ever links out.
+          const linksOut = caseStudy && !hasShots(p);
+          const isActive = !linksOut && p.id === active?.id;
+
+          const card = displayImage(p);
 
           const body = (
             <>
+              {card && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={card}
+                  alt=""
+                  loading="lazy"
+                  className="mb-3 aspect-video w-full rounded-sm border border-hairline bg-surface-alt object-cover object-top"
+                />
+              )}
               <div className="mono-label flex items-center justify-between gap-2 text-faint">
                 <span>{p.category.replace("-", " ")}</span>
                 {isActive && <span className="text-accent">▸ NOW SHOWING</span>}
-                {caseStudy && <span className="text-accent-strong">CASE STUDY →</span>}
+                {caseStudy && !isActive && (
+                  <span className="text-accent-strong">CASE STUDY{linksOut ? " →" : ""}</span>
+                )}
               </div>
               <div className="mt-2 font-display text-lg font-semibold text-ink">{p.title}</div>
               <p className="mt-1 text-[13px] leading-relaxed text-muted-2">{p.description}</p>
@@ -289,9 +344,10 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
           const shared =
             "w-[82%] shrink-0 snap-center rounded-md border-[1.5px] p-4 text-left transition-colors md:w-auto md:shrink";
 
-          // Lab work has nothing to load into the pane, so its card goes
-          // straight to the walkthrough rather than selecting a dead preview.
-          return caseStudy ? (
+          // A case study with screenshots loads them into the pane like any
+          // other project. One without has nothing to show, so its card goes
+          // straight to the walkthrough rather than selecting an empty pane.
+          return linksOut ? (
             <Link
               key={p.id}
               href={`/projects/${p.slug}`}
@@ -319,8 +375,83 @@ export function LiveViewer({ projects }: { projects: Project[] }) {
   );
 }
 
+/**
+ * Case-study preview: the project's screenshots, cycling.
+ *
+ * Lab work has no site to frame, and a single still left the pane looking
+ * unfinished. Cycling the screenshots fills it and previews the walkthrough at
+ * the same time. Order is shuffled once per project so the pane does not always
+ * open on "install the software" — the least interesting shot in any build.
+ */
+function ShufflePane({ project }: { project: Project }) {
+  const shots = useMemo(() => {
+    const all = caseStudyShots(project);
+    // Seeded by project id, so the order is stable between server and client
+    // render — Math.random() here would cause a hydration mismatch.
+    return all
+      .map((src, i) => ({ src, k: Math.sin(project.id * 97 + i * 31) }))
+      .sort((a, b) => a.k - b.k)
+      .map((x) => x.src);
+  }, [project]);
+
+  // Remounted per project via `key` at the call site, so this starts at 0
+  // again on every switch — no reset effect, no cascading render.
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    if (shots.length < 2) return;
+    const t = setInterval(() => setI((n) => (n + 1) % shots.length), 4000);
+    return () => clearInterval(t);
+  }, [shots.length]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-surface-alt">
+      {shots.map((src, n) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={src}
+          src={src}
+          alt=""
+          aria-hidden={n !== i}
+          className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-700 ${
+            n === i ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))}
+
+      {/* Dots, so it reads as a gallery rather than a page that keeps changing */}
+      {shots.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5">
+          {shots.map((src, n) => (
+            <button
+              key={src}
+              onClick={() => setI(n)}
+              aria-label={`Screenshot ${n + 1}`}
+              className={`h-1.5 rounded-pill transition-all ${
+                n === i ? "w-5 bg-paper" : "w-1.5 bg-paper/50 hover:bg-paper/80"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      <Link
+        href={`/projects/${project.slug}`}
+        className="mono-label absolute right-4 top-4 rounded-pill bg-ink px-3 py-1.5 font-semibold text-paper shadow-lg transition-opacity hover:opacity-90"
+      >
+        VIEW CASE STUDY →
+      </Link>
+    </div>
+  );
+}
+
 /** Default preview: a demo video, else a screenshot, else a placeholder. */
 function PreviewPane({ active, onRunLive }: { active: Project | null; onRunLive?: () => void }) {
+  // Lab work: screenshots instead of an iframe or a video.
+  if (active && isCaseStudy(active) && hasShots(active)) {
+    return <ShufflePane key={active.id} project={active} />;
+  }
+
   const runButton = onRunLive ? (
     <button
       onClick={onRunLive}

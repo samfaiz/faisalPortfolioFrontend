@@ -23,11 +23,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [hero, about, skills, projects, experiences, posts, settings, seo] = await Promise.all([
+  const [hero, about, skills, projects, categories, experiences, posts, settings, seo] = await Promise.all([
     api.hero(),
     api.about(),
     api.skills(),
     api.projects(),
+    api.projectCategories(),
     api.experiences(),
     api.posts(),
     api.settings(),
@@ -164,7 +165,7 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl">
           <SectionLabel n="/03" title="Try them live" />
           <div className="mt-6">
-            <LiveViewer projects={projects} />
+            <LiveViewer projects={projects} categories={categories} />
           </div>
         </div>
       </section>
