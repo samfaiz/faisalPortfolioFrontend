@@ -12,6 +12,7 @@ const ALIASES: Record<string, string> = {
   "/cloud-security-prep": "/cloud-security-prep",
   "/cloudsecurity-prep": "/cloud-security-prep", // e.g. /CloudSecurity-prep
   "/seo-prep": "/seo-prep", // e.g. /SEO-prep
+  "/ai-soc-prep": "/ai-soc-prep", // e.g. /AI-SOC-prep
 };
 
 export function proxy(request: NextRequest) {
