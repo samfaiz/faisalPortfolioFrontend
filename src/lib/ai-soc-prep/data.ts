@@ -21,6 +21,10 @@
  *               tooling. Keeps the path publishable and defensible.
  */
 
+import { M01_SECTIONS, M02_SECTIONS } from "./modules/m01-02";
+import { M03_SECTIONS, M04_SECTIONS, M05_SECTIONS } from "./modules/m03-05";
+import { ANNEXES } from "./modules/annexes";
+
 export type Block =
   | "fundamentals"
   | "stack"
@@ -48,6 +52,34 @@ export const BLOCK_ORDER: Block[] = [
   "checkpoint",
 ];
 
+/** A callout, using the path's verification grammar. */
+export interface Callout {
+  kind: "model" | "verified" | "review" | "warn";
+  title: string;
+  body: string;
+}
+
+/**
+ * Query pairs. KQL and SPL are both first-class through this path — a reader
+ * coming from /soc-prep knows SPL, a reader working in Sentinel knows KQL, and
+ * showing one and hand-waving the other strands half the audience.
+ */
+export interface QueryPair {
+  note?: string;
+  kql?: string;
+  spl?: string;
+}
+
+export interface Section {
+  heading: string;
+  /** Prose. May contain inline HTML; rendered inside .soc-prose. */
+  body: string;
+  callout?: Callout;
+  queries?: QueryPair;
+  code?: { lang?: string; label?: string; code: string };
+  table?: { headers: string[]; rows: string[][] };
+}
+
 export interface Module {
   n: number;
   slug: string;
@@ -59,6 +91,12 @@ export interface Module {
   objectives: string[];
   /** Section headings the full page will carry — the skeleton of the content. */
   outline: string[];
+  /**
+   * Written content. Present on finished modules; absent on shells, where the
+   * page falls back to rendering `outline` so a reader still sees what is
+   * coming rather than an empty page.
+   */
+  sections?: Section[];
   /** The exercise that closes every module: prove the model was right. */
   verifyIt: string;
   /** Diagram filename under /public/ai-soc-prep/diagrams/. */
@@ -68,6 +106,11 @@ export interface Module {
   minutes: number;
   /** Set where a module exists for a reason worth stating on the card. */
   whyItsHere?: string;
+  /**
+   * Internal-only notes, behind the shared-password gate at
+   * /ai-soc-prep/internal. Never rendered on the public module page.
+   */
+  annex?: { heading: string; body: string }[];
 }
 
 export const MODULES: Module[] = [
@@ -93,6 +136,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Given three alert outcomes, identify the one the AI should never have been allowed to close.",
+    sections: M01_SECTIONS,
+    annex: ANNEXES[1],
     diagram: "01-ai-in-soc.webp",
     projects: [],
     minutes: 35,
@@ -121,6 +166,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Same log, temperature 0 versus 0.8, three runs each. Record the variance and decide which is deployable.",
+    sections: M02_SECTIONS,
+    annex: ANNEXES[2],
     diagram: "02-llm-mechanics.webp",
     projects: [1],
     minutes: 45,
@@ -147,6 +194,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Compute precision and recall by hand from a 200-alert confusion matrix, then say what the FP rate costs in analyst hours.",
+    sections: M03_SECTIONS,
+    annex: ANNEXES[3],
     diagram: "03-classical-ml.webp",
     projects: [3],
     minutes: 50,
@@ -178,6 +227,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Take a deliberately bad prompt, find its four failure modes, and rewrite it.",
+    sections: M04_SECTIONS,
+    annex: ANNEXES[4],
     diagram: "04-prompt-anatomy.webp",
     projects: [2, 4],
     minutes: 55,
@@ -206,6 +257,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Classify eight realistic snippets against the tree and defend the two hardest calls.",
+    sections: M05_SECTIONS,
+    annex: ANNEXES[5],
     diagram: "05-data-governance.webp",
     projects: [9],
     minutes: 45,
@@ -524,3 +577,8 @@ export function moduleBySlug(slug: string): Module | undefined {
 export function moduleByNumber(n: number): Module | undefined {
   return MODULES.find((m) => m.n === n);
 }
+
+/** Modules that carry an internal annex. */
+export const MODULES_WITH_ANNEX = MODULES.filter(
+  (m) => (m.annex?.length ?? 0) > 0
+);

@@ -301,6 +301,31 @@ export function AiSocPrepKit() {
           </div>
         </section>
 
+        {/* ---- Supporting pages ---- */}
+        <section className="mt-14">
+          <h3 className="mono-label mb-4 text-accent-strong">ALSO ON THIS PATH</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/ai-soc-prep/datasets"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">DATASETS &amp; FREE LABS →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Every dataset the projects run on, with licence and load code. All public, so anyone can reproduce the work.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/internal"
+              className="rounded-md border border-dashed border-hairline bg-surface-alt px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-faint">INTERNAL ANNEXES ⌁</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Environment-specific notes alongside the public modules. Password required.
+              </span>
+            </Link>
+          </div>
+        </section>
+
         {/* ---- Sibling paths ---- */}
         <section className="mt-14 border-t border-hairline pt-8">
           <h3 className="mono-label mb-4 text-accent-strong">

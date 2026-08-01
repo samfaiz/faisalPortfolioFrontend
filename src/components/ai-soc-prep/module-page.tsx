@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ModuleSections, SectionNav } from "./sections";
 import {
   BLOCK_NAMES,
   MODULES,
@@ -96,7 +97,20 @@ export function AiSocModulePage({ module: m }: { module: Module }) {
           </ul>
         </section>
 
-        {/* ---- Outline ---- */}
+        {/* ---- Written content, when the module has it ---- */}
+        {m.sections && m.sections.length > 0 && (
+          <>
+            <div className="mt-10 max-w-(--soc-measure)">
+              <SectionNav sections={m.sections} />
+            </div>
+            <div className="mt-10">
+              <ModuleSections sections={m.sections} />
+            </div>
+          </>
+        )}
+
+        {/* ---- Outline — shells only. A written module has real headings. ---- */}
+        {!m.sections && (
         <section className="mt-10 space-y-3">
           <h2 className="mono-label flex items-center gap-3 text-accent-strong">
             What this module covers
@@ -122,6 +136,7 @@ export function AiSocModulePage({ module: m }: { module: Module }) {
             ))}
           </ol>
         </section>
+        )}
 
         {/* ---- Diagram ---- */}
         <section className="mt-10">
@@ -161,7 +176,8 @@ export function AiSocModulePage({ module: m }: { module: Module }) {
           </section>
         )}
 
-        {/* ---- Status ---- */}
+        {/* ---- Status — shells only ---- */}
+        {!m.sections && (
         <section className="mt-10">
           <div className="max-w-(--soc-measure) rounded-md border border-dashed border-hairline bg-surface-alt px-4 py-3.5">
             <span className="mono-label block text-faint">
@@ -174,6 +190,30 @@ export function AiSocModulePage({ module: m }: { module: Module }) {
             </p>
           </div>
         </section>
+        )}
+
+        {/* ---- Internal annex pointer (public: link only, never content) ---- */}
+        {(m.annex?.length ?? 0) > 0 && (
+          <section className="soc-noprint mt-10">
+            <Link
+              href={`/ai-soc-prep/internal/${m.slug}`}
+              className="flex max-w-(--soc-measure) items-center justify-between gap-3 rounded-md border border-dashed border-hairline bg-surface-alt px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span>
+                <span className="mono-label block text-faint">
+                  INTERNAL ANNEX · {m.annex!.length} NOTE
+                  {m.annex!.length === 1 ? "" : "S"}
+                </span>
+                <span className="text-[13.5px] text-muted-2">
+                  Environment-specific notes. Password required.
+                </span>
+              </span>
+              <span aria-hidden className="font-mono text-[16px] text-faint">
+                ⌁
+              </span>
+            </Link>
+          </section>
+        )}
 
         {/* ---- Prev / next ---- */}
         <nav className="soc-noprint mt-14 flex flex-wrap gap-3 border-t border-hairline pt-6">
