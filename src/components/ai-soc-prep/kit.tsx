@@ -306,6 +306,15 @@ export function AiSocPrepKit() {
           <h3 className="mono-label mb-4 text-accent-strong">ALSO ON THIS PATH</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <Link
+              href="/ai-soc-prep/projects"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">PROJECTS →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Ten hands-on builds, from a first local inference to an eval harness that measures your own assistant.
+              </span>
+            </Link>
+            <Link
               href="/ai-soc-prep/datasets"
               className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
             >

@@ -170,6 +170,23 @@ function StepCard({
           </div>
         )}
 
+        {step.image && (
+          <figure className="my-3 max-w-(--soc-measure)">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={step.image.src}
+              alt={step.image.caption ?? step.title}
+              loading="lazy"
+              className="w-full rounded-md border border-hairline bg-surface-alt"
+            />
+            {step.image.caption && (
+              <figcaption className="mt-2 font-mono text-[11.5px] leading-relaxed text-muted-2">
+                {step.image.caption}
+              </figcaption>
+            )}
+          </figure>
+        )}
+
         {step.fixes && step.fixes.length > 0 && (
           <details className="soc-noprint group mt-3 max-w-(--soc-measure) rounded-md border border-hairline bg-surface-alt">
             <summary className="mono-label cursor-pointer list-none px-3.5 py-2.5 text-muted-2 hover:text-ink">
@@ -223,6 +240,10 @@ export interface GuideChrome {
   tierLabel: string;
   hours: string;
   cost: string;
+  /** Beginner / Intermediate / Advanced. Optional — the kits without it skip it. */
+  difficulty?: string;
+  /** Downloadable starter, linked from the header. */
+  repoUrl?: string;
   stack: string[];
   prerequisites: string[];
   validation: string[];
@@ -314,6 +335,21 @@ export function GuidePage({
             <span className="mono-label rounded-pill border border-hairline px-2 py-0.5 text-muted-2">
               {chrome.hours}
             </span>
+            {chrome.difficulty && (
+              <span className="mono-label rounded-pill border border-hairline px-2 py-0.5 text-muted-2">
+                {chrome.difficulty.toUpperCase()}
+              </span>
+            )}
+            {chrome.repoUrl && (
+              <a
+                href={chrome.repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mono-label soc-noprint rounded-pill border border-accent px-2 py-0.5 text-accent-strong transition-colors hover:bg-accent hover:text-paper"
+              >
+                STARTER REPO ↗
+              </a>
+            )}
           </div>
 
           <h1 className="mt-3 font-display text-[clamp(1.7rem,5vw,2.7rem)] font-bold leading-[1.05] tracking-[-0.035em]">
@@ -367,6 +403,29 @@ export function GuidePage({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {guide.dataset && (
+            <div className="space-y-2">
+              <BlockHeading>The data</BlockHeading>
+              <div className="max-w-(--soc-measure) rounded-md border border-hairline bg-surface-alt px-4 py-3.5">
+                <span className="mono-label mb-1 block text-accent-strong">
+                  {guide.dataset.url ? (
+                    <a
+                      href={guide.dataset.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {guide.dataset.name} ↗
+                    </a>
+                  ) : (
+                    guide.dataset.name
+                  )}
+                </span>
+                <Html className="soc-prose" html={guide.dataset.note} />
+              </div>
             </div>
           )}
 
@@ -461,6 +520,37 @@ export function GuidePage({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {guide.enterprise && guide.enterprise.length > 0 && (
+            <div className="space-y-2">
+              <BlockHeading>The enterprise variant</BlockHeading>
+              <p className="max-w-(--soc-measure) font-mono text-[11.5px] leading-relaxed text-muted-2">
+                {"// The build above is local and free, and it is the one that was tested. This is how the same job is done on a commercial platform — documented, not verified here."}
+              </p>
+              <div className="space-y-2">
+                {guide.enterprise.map((e, i) => (
+                  <div
+                    key={i}
+                    className="max-w-(--soc-measure) rounded-md border border-dashed border-(--ai-model) bg-(--ai-model)/5 px-4 py-3"
+                  >
+                    <span className="mono-label mb-1 block text-(--ai-model)">
+                      {e.platform.toUpperCase()}
+                    </span>
+                    <Html className="soc-prose" html={e.body} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {guide.cloudApi && (
+            <div className="max-w-(--soc-measure) rounded-md border border-(--ai-review) bg-(--ai-review)/5 px-4 py-3.5">
+              <span className="mono-label mb-1.5 block text-(--ai-review)">
+                ◆ If you use a hosted API instead
+              </span>
+              <Html className="soc-prose" html={guide.cloudApi} />
             </div>
           )}
 

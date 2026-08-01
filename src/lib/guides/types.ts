@@ -57,6 +57,8 @@ export interface GuideStep {
   fixes?: GuideFix[];
   /** Rough wall-clock for this step — "10 min", "45 min (mostly waiting)". */
   time?: string;
+  /** Screenshot of the result, when seeing it is the point. */
+  image?: { src: string; caption?: string };
   /** Flags a step that costs money or is destructive. Rendered as a warning. */
   warn?: string;
 }
@@ -81,6 +83,19 @@ export interface ProjectGuide {
   steps: GuideStep[];
   /** What to do with the thing once it works — cleanup, teardown, next steps. */
   after?: string[];
+  /**
+   * Where the data comes from. Without this a stranger cannot start, which is
+   * the difference between a guide and a description of one.
+   */
+  dataset?: { name: string; url?: string; note: string };
+  /**
+   * How the same job is done on a commercial platform. The runnable path in
+   * these guides is local and free; this documents the enterprise equivalent
+   * without pretending it was tested here.
+   */
+  enterprise?: { platform: string; body: string }[];
+  /** The hosted-API variant, and the data-handling caveat that comes with it. */
+  cloudApi?: string;
 }
 
 /** Look a guide up by slug. */

@@ -3,13 +3,14 @@ import { api } from "@/lib/api";
 import { CLOUD_GUIDES } from "@/lib/cloud-prep/guides";
 import { SOC_GUIDES } from "@/lib/soc-prep/guides";
 import { MODULES as AI_SOC_MODULES } from "@/lib/ai-soc-prep/data";
+import { AI_SOC_GUIDES } from "@/lib/ai-soc-prep/projects";
 
 const SITE = "https://faisalkhan.dev";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [projects, posts] = await Promise.all([api.projects(), api.posts()]);
 
-  const staticRoutes = ["", "/about", "/projects", "/experience", "/blog", "/soc-prep", "/cloud-security-prep", "/seo-prep", "/ai-soc-prep", "/ai-soc-prep/when-not-to-use-ai", "/ai-soc-prep/datasets"].map((path) => ({
+  const staticRoutes = ["", "/about", "/projects", "/experience", "/blog", "/soc-prep", "/cloud-security-prep", "/seo-prep", "/ai-soc-prep", "/ai-soc-prep/when-not-to-use-ai", "/ai-soc-prep/datasets", "/ai-soc-prep/projects"].map((path) => ({
     url: `${SITE}${path}`,
     lastModified: new Date(),
   }));
@@ -29,6 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // rather than relying on discovery through the kit pages.
   const guideRoutes = [
     ...AI_SOC_MODULES.map((m) => `/ai-soc-prep/module/${m.slug}`),
+    ...AI_SOC_GUIDES.map((g) => `/ai-soc-prep/projects/${g.slug}`),
     ...SOC_GUIDES.map((g) => `/soc-prep/projects/${g.slug}`),
     ...CLOUD_GUIDES.map((g) => `/cloud-security-prep/projects/${g.slug}`),
   ].map((path) => ({

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ModuleSections, SectionNav } from "./sections";
+import { aiSocProjectByNumber } from "@/lib/ai-soc-prep/projects";
 import {
   BLOCK_NAMES,
   MODULES,
@@ -165,14 +166,35 @@ export function AiSocModulePage({ module: m }: { module: Module }) {
               Where you use this
               <span aria-hidden className="h-px flex-1 bg-hairline" />
             </h2>
-            <p className="soc-prose max-w-(--soc-measure)">
-              Feeds{" "}
-              {m.projects.length === 1 ? "project" : "projects"}{" "}
-              {m.projects
-                .map((p) => String(p).padStart(2, "0"))
-                .join(", ")}
-              . Project pages are not built yet.
-            </p>
+            <ul className="space-y-2">
+              {m.projects.map((n) => {
+                const p = aiSocProjectByNumber(n);
+                return (
+                  <li key={n}>
+                    {p?.built ? (
+                      <Link
+                        href={`/ai-soc-prep/projects/${p.slug}`}
+                        className="flex items-center justify-between gap-3 rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3 transition-colors hover:border-ink"
+                      >
+                        <span>
+                          <span className="mono-label block text-accent-strong">
+                            PROJECT {String(n).padStart(2, "0")}
+                          </span>
+                          <span className="text-[14px] text-ink">{p.title}</span>
+                        </span>
+                        <span aria-hidden className="font-mono text-[16px] text-accent-strong">→</span>
+                      </Link>
+                    ) : (
+                      <span className="block rounded-md border border-dashed border-hairline px-4 py-3">
+                        <span className="mono-label block text-faint">
+                          PROJECT {String(n).padStart(2, "0")} · NOT BUILT YET
+                        </span>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         )}
 
