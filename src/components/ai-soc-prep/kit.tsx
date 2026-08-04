@@ -315,12 +315,75 @@ export function AiSocPrepKit() {
               </span>
             </Link>
             <Link
+              href="/ai-soc-prep/quiz"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">QUIZ →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                142 questions — 8 per module plus a final exam gated behind them. Every answer teaches.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/prompts"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">PROMPT LIBRARY →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Tested, copy-paste prompts with output schemas and known failure modes. The page you bookmark.
+              </span>
+            </Link>
+            <Link
               href="/ai-soc-prep/datasets"
               className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
             >
               <span className="mono-label block text-accent-strong">DATASETS &amp; FREE LABS →</span>
               <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
                 Every dataset the projects run on, with licence and load code. All public, so anyone can reproduce the work.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/cost"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">COST &amp; ARCHITECTURE →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Token maths, local vs hosted, the latency budget, and when a 7B model is genuinely enough.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/glossary"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">GLOSSARY →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Plain-English definitions of the jargon, each with why a SOC analyst cares.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/careers"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">CAREERS &amp; INTERVIEW →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                25 likely questions, how to answer them, and the measured sentence that ends an interview in your favour.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/resources"
+              className="rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+            >
+              <span className="mono-label block text-accent-strong">RESOURCES →</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                YouTube, free courses, GitHub and reading — each with a one-line reason it earns a place.
+              </span>
+            </Link>
+            <Link
+              href="/ai-soc-prep/lab-safety"
+              className="rounded-md border-[1.5px] border-(--ai-unverified)/40 bg-surface px-4 py-3.5 transition-colors hover:border-(--ai-unverified)"
+            >
+              <span className="mono-label block text-(--ai-unverified)">LAB SAFETY ⚠</span>
+              <span className="mt-1 block text-[13.5px] leading-relaxed text-muted-2">
+                Read before any malware work — the isolated-lab rules modules 11–12 and project 06 depend on.
               </span>
             </Link>
             <Link

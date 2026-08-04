@@ -23,6 +23,11 @@
 
 import { M01_SECTIONS, M02_SECTIONS } from "./modules/m01-02";
 import { M03_SECTIONS, M04_SECTIONS, M05_SECTIONS } from "./modules/m03-05";
+import { M06_SECTIONS, M07_SECTIONS } from "./modules/m06-07";
+import { M08_SECTIONS, M09_SECTIONS, M10_SECTIONS } from "./modules/m08-10";
+import { M11_SECTIONS, M12_SECTIONS } from "./modules/m11-12";
+import { M13_SECTIONS, M14_SECTIONS } from "./modules/m13-14";
+import { M15_SECTIONS } from "./modules/m15";
 import { ANNEXES } from "./modules/annexes";
 
 export type Block =
@@ -291,6 +296,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Pick a workflow, map which vendor feature covers which step, and name the gap nobody covers.",
+    sections: M06_SECTIONS,
+    annex: ANNEXES[6],
     diagram: "06-vendor-landscape.webp",
     projects: [],
     minutes: 40,
@@ -319,6 +326,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "The environment gate: Ollama running, model pulled, Python env ready, first inference returned. Nothing else in this path works until this passes.",
+    sections: M07_SECTIONS,
+    annex: ANNEXES[7],
     diagram: "07-stack-architecture.webp",
     projects: [1, 8],
     minutes: 60,
@@ -347,6 +356,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Normalise five raw events into a common schema by hand, then count tokens before and after.",
+    sections: M08_SECTIONS,
+    annex: ANNEXES[8],
     diagram: "08-normalization.webp",
     projects: [2, 3],
     minutes: 50,
@@ -376,6 +387,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "Three model verdicts against the raw logs. Find the one that is confidently wrong.",
+    sections: M09_SECTIONS,
+    annex: ANNEXES[9],
     diagram: "09-triage-assist.webp",
     projects: [4, 9],
     minutes: 60,
@@ -405,6 +418,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "A generated query contains two invented field names. Catch both before it runs.",
+    sections: M10_SECTIONS,
+    annex: ANNEXES[10],
     diagram: "10-nl-to-detection.webp",
     projects: [5, 7],
     minutes: 65,
@@ -437,6 +452,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "The model claims an obfuscated script exfiltrates to a domain. Prove or disprove it from the raw script.",
+    sections: M11_SECTIONS,
+    annex: ANNEXES[11],
     diagram: "11-static-triage.webp",
     projects: [6],
     minutes: 70,
@@ -464,6 +481,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "An AI function summary is wrong. Find the contradicting evidence in the decompiled code.",
+    sections: M12_SECTIONS,
+    annex: ANNEXES[12],
     diagram: "12-dynamic-and-re.webp",
     projects: [7],
     minutes: 70,
@@ -495,6 +514,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "A document contains a hidden instruction block. Identify the injection and the control that stops it.",
+    sections: M13_SECTIONS,
+    annex: ANNEXES[13],
     diagram: "13-defending-ai.webp",
     projects: [8],
     minutes: 60,
@@ -524,6 +545,8 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "A flawless AI-written phishing email. Build the detection case without using a single content signal.",
+    sections: M14_SECTIONS,
+    annex: ANNEXES[14],
     diagram: "14-ai-enabled-attacks.webp",
     projects: [2],
     minutes: 55,
@@ -550,6 +573,7 @@ export const MODULES: Module[] = [
     ],
     verifyIt:
       "State your own assistant's precision and hallucination rate from project 10, and where it fails.",
+    sections: M15_SECTIONS,
     diagram: "15-ai-soc-readiness.webp",
     projects: [10],
     minutes: 90,

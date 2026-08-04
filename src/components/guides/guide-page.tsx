@@ -335,11 +335,15 @@ export function GuidePage({
             <span className="mono-label rounded-pill border border-hairline px-2 py-0.5 text-muted-2">
               {chrome.hours}
             </span>
-            {chrome.difficulty && (
-              <span className="mono-label rounded-pill border border-hairline px-2 py-0.5 text-muted-2">
-                {chrome.difficulty.toUpperCase()}
-              </span>
-            )}
+            {/* The SOC and Cloud kits use tierLabel for the tier and difficulty
+                for the level, which are different things. The AI SOC path has
+                no tiers, so both would render the same word — skip the second. */}
+            {chrome.difficulty &&
+              chrome.difficulty.toUpperCase() !== chrome.tierLabel.toUpperCase() && (
+                <span className="mono-label rounded-pill border border-hairline px-2 py-0.5 text-muted-2">
+                  {chrome.difficulty.toUpperCase()}
+                </span>
+              )}
             {chrome.repoUrl && (
               <a
                 href={chrome.repoUrl}

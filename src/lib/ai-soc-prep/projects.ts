@@ -12,6 +12,15 @@
  * before it is scaled to ten.
  */
 import type { ProjectGuide } from "@/lib/guides/types";
+import { p02 } from "./guides/p02";
+import { p03 } from "./guides/p03";
+import { p04 } from "./guides/p04";
+import { p05 } from "./guides/p05";
+import { p06 } from "./guides/p06";
+import { p07 } from "./guides/p07";
+import { p08 } from "./guides/p08";
+import { p09 } from "./guides/p09";
+import { p10 } from "./guides/p10";
 
 export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 
@@ -75,6 +84,332 @@ export const AI_SOC_PROJECTS: AiSocProject[] = [
       "Swap the model for a 3B and a 14B and record where structured output starts failing. That number is worth knowing before you rely on it.",
       "Add a second log line and see how the verdict changes — this is the first hint of the context budgeting in module 08.",
       "Run the same prompt ten times at temperature 0 and record any variance. Module 02 claims it is not fully deterministic; check it yourself.",
+    ],
+    built: true,
+  },
+  {
+    n: 2,
+    slug: "phishing-email-analyzer",
+    title: "Phishing email analyzer",
+    tagline:
+      "Raw .eml in, analyst report out — where every fact is parsed by code and only the interpretation is AI.",
+    outcome:
+      "<p>A tool that reads an email file and produces a ticket-ready Markdown report: real sender versus displayed sender, SPF/DKIM/DMARC with alignment, defanged URLs with display-vs-target mismatches, attachment hashes, and an AI verdict where <b>every claim cites a field you can check</b>.</p>",
+    proves:
+      "That you know which parts of an analysis must be deterministic and which benefit from a model — and that you measured the false-positive rate on legitimate mail rather than only testing on phishing.",
+    difficulty: "Beginner",
+    hours: "3–4 h",
+    modules: [4, 5, 8],
+    after: [1],
+    stack: ["Python 3.11", "email (stdlib)", "tldextract", "Ollama", "Pydantic"],
+    prerequisites: [
+      "<b>Project 01</b> — the grounding validator is reused unchanged.",
+      "<b>Module 08</b> — the evidence bundle is that module's normalisation applied to email.",
+      "<b>Module 05</b> — matters here more than anywhere: an email is the worst thing to paste into a hosted API without thinking.",
+      "One phishing email you can export as <code>.eml</code>, and several legitimate ones.",
+    ],
+    validation: [
+      "Only the <b>topmost</b> <code>Authentication-Results</code> header is trusted, and the count of ignored ones appears in the report.",
+      "A sample with <code>dkim=pass</code> but <code>aligned: false</code> is correctly called phishing — passing authentication on the wrong domain is the whole trick.",
+      "Every URL in the output is defanged; nothing in the pipeline resolves or fetches anything.",
+      "The evidence validator rejects a verdict citing a bundle path that does not exist.",
+      "You have a measured false-positive rate on at least ten legitimate emails, written down with the date and model tag.",
+    ],
+    pitch:
+      "\"I built a phishing analyzer and the interesting decision was how little of it is AI. Header parsing, authentication results and URL extraction are all deterministic Python — the model only interprets what that code found, and it is explicitly told not to re-derive the SPF result, because it will contradict the header if you let it. The detail I am proudest of is that it trusts only the topmost Authentication-Results header, since the ones below it were written by servers upstream of ours, possibly the attacker's. And I measured it on legitimate mail, not just phishing — it was flagging 8% of newsletters, which is the number that decides whether anyone would actually use it.\"",
+    stretch: [
+      "Add VirusTotal lookups on attachment hashes, behind an explicit flag — it is the first thing in this path that leaves your machine.",
+      "Run the SpamAssassin corpus through it and see what a pre-DKIM world looks like when the strongest signals are simply absent.",
+      "Redact the bundle with Presidio and compare a local verdict against a hosted one on the redacted version. If the accuracy holds, you have module 05's argument in numbers.",
+    ],
+    built: true,
+  },
+  {
+    n: 3,
+    slug: "windows-auth-anomaly-hunter",
+    title: "Windows auth log anomaly hunter",
+    tagline:
+      "42,000 logon events down to 20 clusters with pure arithmetic, then one model call to write the hunt narrative.",
+    outcome:
+      "<p>A hunt pipeline over real Windows 4624/4625/4648 events: per-account baselines with a sparse-account guard, weighted deviation scoring where every score decomposes into readable reasons, embedding clustering, and a single AI call producing findings with an attack hypothesis, a benign explanation and a disconfirming check each.</p>",
+    proves:
+      "That you know where AI belongs in a detection pipeline — at the end, on the small set, doing interpretation — and that you measured recall against known attack samples instead of assuming it.",
+    difficulty: "Intermediate",
+    hours: "5–6 h",
+    modules: [3, 8, 9],
+    after: [1, 2],
+    stack: ["Python 3.11", "pandas", "scikit-learn", "Ollama", "nomic-embed-text"],
+    prerequisites: [
+      "<b>Projects 01 and 02.</b> The validator and the bundle-then-interpret shape both carry over.",
+      "<b>Module 03</b> — the sparse-account guard comes straight from it, and skipping it flags every new starter.",
+      "<b>Module 09</b> — the clustering step is that module's dedup.",
+      "A Windows machine with a few weeks of Security log history, or the cross-platform route in step 1.",
+    ],
+    validation: [
+      "The baseline is fitted on the baseline period <b>only</b> — training over the attack window teaches it the attack is normal.",
+      "Accounts below 30 events or 7 days are excluded, and the exclusion list is printed rather than hidden.",
+      "Every anomaly score decomposes into reason strings, and the model's citations must match them verbatim.",
+      "Steps 4 through 6 contain no language model at all. If you cannot say why that matters, the project has not landed.",
+      "You have a recall figure against the attack samples and a false-positive count on your own machine, both written down.",
+    ],
+    pitch:
+      "\"I built a Windows authentication hunt that takes 42,000 events down to about 20 clusters, and the part I would point at is that none of that reduction is AI. Baselining is a groupby, scoring is z-scores and set membership, deduplication is DBSCAN over embeddings. The language model runs once, on the 20 survivors, and its job is to write the narrative and propose a hypothesis with a check that would disprove it. Then I measured it — recall against EVTX-ATTACK-SAMPLES was about half, and I can tell you exactly why: I collected 4624 and 4625 but not the Kerberos events, so pass-the-ticket was never visible to it. Knowing where my own detection is blind is worth more than a better number.\"",
+    stretch: [
+      "Add 4768/4769/4771 and re-measure recall. The Kerberos misses should partly close and you will have a before-and-after.",
+      "Require two or more signals before a cluster reaches the model, and measure what recall that costs. The trade is the interesting part.",
+      "Precompute cross-cluster correlations — shared source IP, shared host, overlapping windows — in code and hand them to the model as facts. Smaller models skip this reasoning; giving it to them is cheaper than a bigger model.",
+    ],
+    built: true,
+  },
+  {
+    n: 4,
+    slug: "alert-triage-copilot-rag",
+    title: "Alert triage copilot with RAG",
+    tagline:
+      "Retrieval-augmented triage that answers from your runbooks, cites the exact passage, and refuses when no runbook covers the alert.",
+    outcome:
+      "<p>A copilot that chunks a runbook corpus into a local vector store, retrieves the relevant procedure for an alert, and produces a grounded verdict where every recommendation quotes the runbook chunk behind it — with a validator that <b>rejects any citation the retrieval did not actually contain</b>.</p>",
+    proves:
+      "That you understand RAG is not a truthfulness upgrade but a source to verify against — and that you measured retrieval quality with recall@k rather than assuming it worked.",
+    difficulty: "Intermediate",
+    hours: "5–6 h",
+    modules: [9],
+    after: [1, 2, 3],
+    stack: ["Python 3.11", "Chroma", "nomic-embed-text", "Ollama", "Pydantic"],
+    prerequisites: [
+      "<b>Project 01</b> — the grounding validator returns, pointed at retrieved chunks.",
+      "<b>Module 09</b> — this is that module's triage loop with the retrieve step built out.",
+      "A small runbook corpus — your own <a href=\"/soc-prep\">/soc-prep</a> notes, or the starter set in the guide.",
+      "Ollama with an embedding model; the guide pulls <code>nomic-embed-text</code>.",
+    ],
+    validation: [
+      "Retrieval is tested in isolation first — the right runbook comes back for a query it should match, before the model is ever involved.",
+      "Every citation's quote is a literal substring of the chunk it names; a fabricated citation is rejected, not footnoted.",
+      "An alert unlike anything in the corpus returns <code>no_runbook_match</code> rather than a confident answer from the nearest bad chunk.",
+      "You have a measured recall@3 on a labelled set of at least ten queries, written down.",
+    ],
+    pitch:
+      "\"I built a RAG triage copilot, and the part I would point at is that retrieval being right is a separate question from the model being right — so I measured both. recall@3 on my labelled set was 100% on a clean corpus and dropped when I pointed it at my messier real notes, which is the honest number. And the validator checks that every citation is literally in the retrieved chunk, because a model will happily name chunk 2 and then quote something chunk 2 never said. That check is the difference between grounding and the appearance of grounding.\"",
+    stretch: [
+      "Add hybrid retrieval — combine keyword (BM25) with vector search — and re-measure recall on the queries that shared no vocabulary with their runbook.",
+      "Point the corpus at your full /soc-prep notes and record how recall changes on a larger, messier knowledge base.",
+      "Log which runbook grounded which verdict over a batch, and find the runbook that never gets retrieved — it is either redundant or badly worded.",
+    ],
+    built: true,
+  },
+  {
+    n: 5,
+    slug: "nl-to-kql-validator",
+    title: "NL→KQL assistant with validator",
+    tagline:
+      "Plain-English hunt ideas become KQL — and the assistant refuses to emit anything until it passes a schema check, a bounded dry run, and a row-count sanity gate.",
+    outcome:
+      "<p>An assistant that generates schema-grounded KQL (and its SPL equivalent), then runs it up a four-rung validation ladder — static field check, syntax, bounded dry run, row-count sanity — inside a bounded reject loop, so <b>no unvalidated query ever reaches a human</b>.</p>",
+    proves:
+      "That you treat generated queries as untrusted until validated — building the validator first, before the generator — and that you know why an invented field returns zero rows rather than an error.",
+    difficulty: "Intermediate",
+    hours: "4–5 h",
+    modules: [10],
+    after: [1],
+    stack: ["Python 3.11", "DuckDB", "Ollama", "Pydantic"],
+    prerequisites: [
+      "<b>Module 10</b> — this is that module's validation ladder built into working code.",
+      "<b>Project 01</b> — schema-constrained output and temperature-0 discipline carry over.",
+      "<code>pip install duckdb</code> for the executable dry-run rungs. No Azure account needed.",
+      "Ollama with <code>llama3.1:8b</code>.",
+    ],
+    validation: [
+      "The static field check is built and proven <b>before</b> the generator exists — it catches <code>SourceIP</code> where the column is <code>IpAddress</code>.",
+      "Generation runs in a bounded reject loop: a rejected query is fed its error and regenerates, at most three times, then refuses.",
+      "The dry run executes over a 15-minute window only; zero rows and absurd counts both fail the sanity gate.",
+      "The only two outputs are a fully validated query or a refusal with a reason — there is no path that emits an unchecked query.",
+    ],
+    pitch:
+      "\"I built an NL-to-KQL assistant, and I built the validator before the generator on purpose, because once you have a fluent query in front of you the temptation is to trust it. The check that matters most is the cheapest — a static pass that confirms every field exists in the schema, which catches the invented-column mistake that returns zero rows in Sentinel and reads as 'nothing found'. The assistant literally cannot emit a query that has not passed a bounded dry run and a row-count sanity check. The refusals are the feature.\"",
+    stretch: [
+      "Add multi-table join validation — harder, because you must field-check against several schemas at once.",
+      "Log which fields the model most often invents; it tells you which parts of your schema are confusingly named.",
+      "Wire the reject-loop feedback into a small eval: what share of ideas emit on the first attempt versus needing the loop?",
+    ],
+    built: true,
+  },
+  {
+    n: 6,
+    slug: "malware-static-triage-assistant",
+    title: "Malware static triage assistant",
+    tagline:
+      "CAPA, FLOSS, strings and PE structure into a grounded analyst brief and a YARA draft — every AI claim checked against the tool that produced it, every rule scanned against goodware.",
+    outcome:
+      "<p>A static triage pipeline that builds a deterministic evidence picture (PE, entropy, imports, FLOSS strings, CAPA capabilities), has a local model summarise it into an analyst brief, <b>rejects any capability the model invented that CAPA never reported</b>, verifies extracted IOCs against the raw bytes, and drafts a YARA rule proven clean against a goodware corpus.</p>",
+    proves:
+      "That you use AI to accelerate malware triage without trusting it — grounding every claim in tool output and validating every YARA rule against legitimate software.",
+    difficulty: "Intermediate",
+    hours: "5–6 h",
+    modules: [11],
+    after: [1],
+    stack: ["Python 3.11", "pefile", "CAPA", "FLOSS", "YARA", "Ollama"],
+    prerequisites: [
+      "<b>The <a href=\"/ai-soc-prep/lab-safety\">lab safety page</a> read and your lab built.</b> This is not negotiable — the project handles real samples.",
+      "<b>Module 11</b> — this project is that module made executable.",
+      "<b>Project 01</b> — the grounding validator returns, pointed at CAPA output.",
+      "Inside the VM: pefile, CAPA and FLOSS binaries, the <code>yara</code> CLI, Ollama.",
+    ],
+    validation: [
+      "Every finding in the AI brief names a capability that appears in CAPA's output; an invented one is rejected.",
+      "Every extracted IOC is confirmed present in the raw or self-decoded bytes; one the model invented is deleted.",
+      "The YARA rule scans clean against a goodware corpus (System32, a clean mirror) and still matches its own sample.",
+      "The brief states honestly what static analysis could not determine — a packed payload, a runtime-assembled IOC.",
+    ],
+    pitch:
+      "\"I built a static malware triage assistant, and the design rule was that the model never touches the raw bytes and never decides anything — it summarises what a deterministic tool already proved. CAPA finds a capability and cites the address; the model explains it; and a validator rejects the brief if it names a capability CAPA never reported. The YARA rule it drafts isn't done until it scans clean against System32, because a rule that pages the on-call over Calculator is worse than no rule. Knowing where static analysis is blind — a packed payload it can't see into — is part of the brief, not hidden.\"",
+    stretch: [
+      "Add oletools macro extraction for document samples and route the macro through the deobfuscation-and-verify step.",
+      "Build a small goodware corpus of your own line-of-business software — the false positives that matter are the ones generic corpora miss.",
+      "Compare the local model's brief against a public analysis of the same sample and record where it was right, cautious, or wrong.",
+    ],
+    built: true,
+  },
+  {
+    n: 7,
+    slug: "sandbox-report-to-sigma",
+    title: "Sandbox report → Sigma generator",
+    tagline:
+      "A three-step AI chain — IOCs, ATT&CK map, Sigma rule — that verifies at every hop, so a benign decoy domain never survives into the final detection.",
+    outcome:
+      "<p>A chain that extracts IOCs from a sandbox report, maps observed behaviour to ATT&CK, and drafts a backtested Sigma rule — verifying each hop against the report's own facts, and demonstrating side by side how the same chain produces a contaminated rule when the checks are removed.</p>",
+    proves:
+      "That you understand error compounding in AI chains — verifying at every hop rather than the end — and that you backtest a generated rule before it is anything but experimental.",
+    difficulty: "Intermediate",
+    hours: "4–5 h",
+    modules: [12],
+    after: [1, 6],
+    stack: ["Python 3.11", "DuckDB", "Ollama", "Sigma", "Pydantic"],
+    prerequisites: [
+      "<b>Module 12</b> — this project is that module's report→detection chain, instrumented to show the compounding.",
+      "<b>Projects 01 and 06</b> — the grounding validator and extract-then-summarise shape return.",
+      "One sandbox report JSON — a public Hybrid Analysis / Any.Run report, or the sample in the guide.",
+      "Ollama with <code>llama3.1:8b</code>.",
+    ],
+    validation: [
+      "Each hop is verified against report facts before feeding the next — an unsupported IOC assessment is caught at step 1, not step 3.",
+      "The ATT&CK map reflects behaviour actually observed in <i>this</i> detonation, not techniques the family is generally known for.",
+      "The Sigma rule ships <code>status: experimental</code> with blank backtest fields until measured.",
+      "A backtest counts fires per day, and only a rate analysts can absorb promotes the rule out of experimental.",
+    ],
+    pitch:
+      "\"I built a sandbox-report-to-Sigma chain, and the interesting part is a failure mode I made visible: if step one mislabels a benign CDN as C2, step two maps it to a command-and-control technique and step three writes a rule to alert on legitimate traffic — and it looks exactly as trustworthy as a correct rule. So I verify at every hop, not at the end, and I can show you the same chain producing a clean rule or a contaminated one depending only on whether the checks are on. Then nothing gets past experimental without a 30-day backtest.\"",
+    stretch: [
+      "Feed a report with two benign decoys and measure how often each survives the unchecked chain across ten runs.",
+      "Add a confidence score that travels with each IOC through the chain, so a low-confidence extraction cannot become a high-confidence rule.",
+      "Compile the Sigma to both KQL and SPL and backtest in each, comparing the fire rates.",
+    ],
+    built: true,
+  },
+  {
+    n: 8,
+    slug: "mcp-soc-agent-approval-gate",
+    title: "MCP SOC agent with approval gate",
+    tagline:
+      "An agent with VirusTotal, AbuseIPDB and log-query tools — read-only by default, and a human approves every action with a side effect before it runs.",
+    outcome:
+      "<p>An MCP-based agent that can enrich an alert by calling real tools, but whose every side-effecting action is stopped at a human approval gate — with the injected-instruction case from module 13 demonstrated and blocked, and every tool call logged.</p>",
+    proves:
+      "That you can give a model tools safely — read-only by default, approval-gated side effects, and injection-aware — which is the single strongest portfolio signal on the path.",
+    difficulty: "Advanced",
+    hours: "6–8 h",
+    modules: [7, 13],
+    after: [1, 4],
+    stack: ["Python 3.11", "MCP", "Ollama", "VirusTotal API", "AbuseIPDB API"],
+    prerequisites: [
+      "<b>Module 07</b> — MCP as the clean answer to tool access.",
+      "<b>Module 13</b> — the approval gate is that module's control against agentic abuse, made real.",
+      "<b>Projects 01 and 04</b> — grounding and retrieval carry over.",
+      "Free API keys for VirusTotal and AbuseIPDB; the guide keeps them read-only.",
+    ],
+    validation: [
+      "Every tool is read-only unless there is a specific reason; the two with side effects require per-invocation human approval.",
+      "An indirect prompt injection planted in an enrichment result is shown attempting to trigger an unapproved action — and the gate stops it.",
+      "Every tool call is logged with its arguments, exactly as module 13's minimum log line requires.",
+      "The agent's proposed actions cite the evidence behind them; a human approves against that evidence, not the model's say-so.",
+    ],
+    pitch:
+      "\"I built an MCP agent that enriches alerts with VirusTotal and AbuseIPDB, and the whole design is about blast radius. Every tool is read-only unless it genuinely needs not to be, and anything with a side effect stops at a human approval gate — because the moment a model can act on text an attacker might have written, prompt injection stops being a text problem and becomes an access-control one. I actually plant an injection in an enrichment result to show the agent trying to take an unapproved action, and the gate catching it. Every tool call is logged. That's the difference between an agent and a liability.\"",
+    stretch: [
+      "Add a log-query tool bounded to read-only and a 15-minute window, reusing project 05's validator on any generated query.",
+      "Build a second injection case that hides instructions in a document the agent summarises, and confirm the gate still holds.",
+      "Add an override-rate log on the approval gate — how often a human rejects the agent's proposal is your best trust signal.",
+    ],
+    built: true,
+  },
+  {
+    n: 9,
+    slug: "ai-incident-report-writer",
+    title: "AI incident report writer",
+    tagline:
+      "A verified timeline in, an executive summary and technical writeup out — with the module 05 audit-trail fields baked into every generated report.",
+    outcome:
+      "<p>A report writer that takes a structured incident timeline, grounds an executive summary and a technical writeup in it, refuses to state anything the timeline does not support, and stamps every output with the audit trail — prompt, model, version, reviewer, timestamp — that makes an AI-assisted decision defensible.</p>",
+    proves:
+      "That you can use AI for the high-value, low-risk job of drafting — while keeping the accountability trail that module 05 requires and refusing to let the model add facts.",
+    difficulty: "Intermediate",
+    hours: "3–4 h",
+    modules: [5, 9],
+    after: [1, 4],
+    stack: ["Python 3.11", "Ollama", "Pydantic", "Jinja2"],
+    prerequisites: [
+      "<b>Module 09</b> — the entity timeline is this project's input.",
+      "<b>Module 05</b> — the audit-trail fields are the point, not an add-on.",
+      "<b>Projects 01 and 04</b> — grounding and retrieval of past tickets carry over.",
+      "Ollama with <code>llama3.1:8b</code>.",
+    ],
+    validation: [
+      "Every claim in both the exec summary and the technical writeup traces to a timeline entry; the model cannot add an event.",
+      "Two audiences, one source of truth — the summaries differ in altitude, never in facts.",
+      "Every generated report carries prompt, model, version, human reviewer and timestamp — the module 05 record.",
+      "A timeline with a gap produces a report that states the gap rather than smoothing over it.",
+    ],
+    pitch:
+      "\"I built an incident report writer, which is the highest-value, lowest-risk place to use AI — drafting, not deciding. It takes a verified timeline and produces an exec summary and a technical writeup that differ in altitude but never in facts, because every claim has to trace to a timeline entry and the model is forbidden from adding events. The detail I'm proudest of is boring on purpose: every report is stamped with the prompt, model, version, reviewer and timestamp, so an AI-assisted writeup can survive an auditor asking how it was produced. That audit trail is what makes it usable at work rather than just clever.\"",
+    stretch: [
+      "Retrieve similar past incidents (project 04's store) and cite them, without letting their details leak into this report's facts.",
+      "Generate a regulator-facing version that states only what is confirmed and flags what is still under investigation.",
+      "Diff two reports from the same timeline at temperature 0 and 0.7 to show why report generation runs cold.",
+    ],
+    built: true,
+  },
+  {
+    n: 10,
+    slug: "eval-harness-capstone",
+    title: "Eval harness (capstone)",
+    tagline:
+      "A 50-alert golden dataset and the harness that measures your assistant's precision, recall and hallucination rate — the project that turns “I made a chatbot” into “I engineered a system”.",
+    outcome:
+      "<p>A labelled 50-alert golden dataset, a labelling protocol, and a harness that measures your triage assistant's precision, recall and hallucination rate, runs a prompt A/B, and produces a results table plus an honest written assessment of where the assistant fails.</p>",
+    proves:
+      "That you can measure an AI system, not just build one — the single capability that separates a portfolio from every other “I use AI for triage” claim.",
+    difficulty: "Advanced",
+    hours: "8–10 h",
+    modules: [3, 9],
+    after: [1, 2, 3, 4, 5],
+    stack: ["Python 3.11", "pandas", "Ollama", "matplotlib"],
+    prerequisites: [
+      "<b>Everything before it.</b> The harness measures the assistant you built across the earlier projects.",
+      "<b>Module 03</b> — precision, recall and the confusion matrix as a cost model.",
+      "<b>Module 09</b> — the assistant under test and its confidence calibration.",
+      "Ollama, and the patience to label 50 alerts properly.",
+    ],
+    validation: [
+      "The golden dataset has a written labelling protocol and a resolved second-opinion process — labels are defensible, not vibes.",
+      "Precision, recall and hallucination rate are computed against the labels, not asserted.",
+      "A prompt A/B is measured on the same dataset, so a change is proven better rather than assumed.",
+      "The deliverable includes a written account of where the assistant fails and why — the honest assessment nobody else writes.",
+    ],
+    pitch:
+      "\"The capstone is the eval harness, and it's the project nobody builds — which is exactly why it's the one worth building. I labelled a 50-alert golden dataset with a written protocol, then measured my triage assistant against it: precision, recall, and the number that actually matters, the hallucination rate — how often it cited evidence that wasn't in the input. I ran a prompt A/B on the same set so I could prove one prompt was better rather than believe it. And I wrote up where it fails, honestly. That's the difference between saying 'I use AI for triage' and saying 'I measured mine at 82% precision with a 6% hallucination rate, and here's the harness' — one is a claim, the other is engineering.\"",
+    stretch: [
+      "Measure calibration: of the verdicts returned at 0.9 confidence, what share were actually right? Overconfidence is the default.",
+      "Compare a 3B, 8B and 14B model on the same golden set and find where structured-output reliability breaks down.",
+      "Re-run the harness after grounding was added (project 04) versus before (project 01) and quantify what RAG bought you.",
     ],
     built: true,
   },
@@ -420,7 +755,9 @@ const p01: ProjectGuide = {
     "<p>Anthropic, OpenAI and the rest will do this better — stronger structured output and better refusal calibration. Two things change. First, the event leaves your network, so everything in <b>module 05</b> applies before you paste anything real. Second, you gain a dependency on connectivity you may deliberately cut during an incident. Use hosted models for public and synthetic data; keep a local path for anything else. The code differs by about four lines.</p>",
 };
 
-export const AI_SOC_GUIDES: ProjectGuide[] = [p01];
+export const AI_SOC_GUIDES: ProjectGuide[] = [
+  p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
+];
 
 export function aiSocGuideBySlug(slug: string): ProjectGuide | undefined {
   return AI_SOC_GUIDES.find((g) => g.slug === slug);

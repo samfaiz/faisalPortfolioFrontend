@@ -20,21 +20,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * The remaining nine, from the plan. Listed rather than hidden: a reader
- * deciding whether to start should see where the path goes, and the capstone
- * is the reason to start at all.
+ * All ten are built. The array stays so the section renders empty-safe and a
+ * future eleventh project has an obvious home.
  */
-const PLANNED: { n: number; title: string; note: string; difficulty: string }[] = [
-  { n: 2, title: "Phishing email analyzer", difficulty: "Beginner", note: "EML → headers, SPF/DKIM, URLs, attachments → verdict + analyst report. Header analysis is deterministic code; only the interpretation is AI." },
-  { n: 3, title: "Windows auth log anomaly hunter", difficulty: "Intermediate", note: "4624/4625/4648 baselining, embedding clustering, then an AI narrative. Proves AI is not the whole pipeline." },
-  { n: 4, title: "Alert triage copilot with RAG", difficulty: "Intermediate", note: "Runbook corpus → vector store → grounded verdicts with citations." },
-  { n: 5, title: "NL→KQL assistant with validator", difficulty: "Intermediate", note: "Schema-grounded generation that refuses to run unvalidated output. The validator is the point, not the generation." },
-  { n: 6, title: "Malware static triage assistant", difficulty: "Intermediate", note: "CAPA/FLOSS/strings/PE → structured report → YARA draft → false-positive check against goodware." },
-  { n: 7, title: "Sandbox report → Sigma generator", difficulty: "Intermediate", note: "Report → IOCs → ATT&CK map → Sigma rule → backtest. Chains three AI steps and shows error compounding." },
-  { n: 8, title: "MCP SOC agent with approval gate", difficulty: "Advanced", note: "An agent with VirusTotal, AbuseIPDB and log-query tools, and a human approval on every action with side effects." },
-  { n: 9, title: "AI incident report writer", difficulty: "Intermediate", note: "Timeline in, exec summary and technical writeup out, with the audit-trail fields from module 05." },
-  { n: 10, title: "Eval harness", difficulty: "Advanced", note: "50-alert golden dataset, precision/recall/hallucination measurement, prompt A/B. Nobody builds this — it turns “I made a chatbot” into “I engineered and measured a system”." },
-];
+const PLANNED: { n: number; title: string; note: string; difficulty: string }[] = [];
 
 function BuiltCard({ p }: { p: AiSocProject }) {
   return (
@@ -129,41 +118,56 @@ export default function AiSocProjectsPage() {
           </ul>
         </section>
 
-        <section className="mt-12">
-          <h2 className="mono-label mb-1.5 flex items-center gap-3 text-faint">
-            PLANNED
-            <span aria-hidden className="h-px flex-1 bg-hairline" />
-            <span>{PLANNED.length}</span>
-          </h2>
-          <p className="mb-4 max-w-(--soc-measure) font-mono text-[11.5px] leading-relaxed text-muted-2">
-            {
-              "// Listed rather than hidden — where the path goes matters when you are deciding whether to start it."
-            }
-          </p>
-          <ul className="space-y-2">
-            {PLANNED.map((p) => (
-              <li
-                key={p.n}
-                className="rounded-md border border-dashed border-hairline bg-surface-alt px-4 py-3.5"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="mono-label text-faint">
-                    PROJECT {String(p.n).padStart(2, "0")}
-                  </span>
-                  <span className="mono-label text-faint">
-                    {p.difficulty.toUpperCase()}
-                  </span>
-                </div>
-                <h3 className="mt-1 text-[15px] font-semibold text-ink">
-                  {p.title}
-                </h3>
-                <p className="mt-1 max-w-(--soc-measure) text-[13.5px] leading-relaxed text-muted-2">
-                  {p.note}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {PLANNED.length > 0 ? (
+          <section className="mt-12">
+            <h2 className="mono-label mb-1.5 flex items-center gap-3 text-faint">
+              PLANNED
+              <span aria-hidden className="h-px flex-1 bg-hairline" />
+              <span>{PLANNED.length}</span>
+            </h2>
+            <p className="mb-4 max-w-(--soc-measure) font-mono text-[11.5px] leading-relaxed text-muted-2">
+              {
+                "// Listed rather than hidden — where the path goes matters when you are deciding whether to start it."
+              }
+            </p>
+            <ul className="space-y-2">
+              {PLANNED.map((p) => (
+                <li
+                  key={p.n}
+                  className="rounded-md border border-dashed border-hairline bg-surface-alt px-4 py-3.5"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="mono-label text-faint">
+                      PROJECT {String(p.n).padStart(2, "0")}
+                    </span>
+                    <span className="mono-label text-faint">
+                      {p.difficulty.toUpperCase()}
+                    </span>
+                  </div>
+                  <h3 className="mt-1 text-[15px] font-semibold text-ink">
+                    {p.title}
+                  </h3>
+                  <p className="mt-1 max-w-(--soc-measure) text-[13.5px] leading-relaxed text-muted-2">
+                    {p.note}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <section className="mt-12">
+            <div className="max-w-(--soc-measure) rounded-md border-[1.5px] border-(--ai-verified) bg-(--ai-verified)/5 px-5 py-4">
+              <span className="mono-label mb-1.5 block text-(--ai-verified)">
+                ✓ ALL TEN BUILT
+              </span>
+              <p className="text-[13.5px] leading-relaxed text-muted-2">
+                Every project on the path is live, from the first local inference
+                to the eval harness that measures your own assistant. Start at 01
+                and work up.
+              </p>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

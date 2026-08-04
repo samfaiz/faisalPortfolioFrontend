@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ModuleSections, SectionNav } from "./sections";
+import { ModuleDiagram } from "./diagram";
 import { aiSocProjectByNumber } from "@/lib/ai-soc-prep/projects";
 import {
   BLOCK_NAMES,
@@ -20,17 +21,15 @@ import {
  */
 
 function DiagramSlot({ module: m }: { module: Module }) {
-  // Diagrams land incrementally. Rather than a broken image, the slot states
-  // what the diagram will show — which is useful on its own.
+  // The diagram carries the path's whole thesis in one glance: blue-dashed is
+  // model output, green-solid is human-verified. The component falls back to a
+  // labelled slot if the file is missing, so partial delivery is safe.
   return (
-    <figure className="rounded-lg border-[1.5px] border-dashed border-hairline bg-surface-alt px-5 py-8 text-center">
-      <span className="mono-label block text-faint">
-        DIAGRAM · {m.diagram}
-      </span>
-      <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-relaxed text-muted-2">
-        Not yet generated.
-      </p>
-    </figure>
+    <ModuleDiagram
+      src={`/ai-soc-prep/diagrams/${m.diagram}`}
+      file={m.diagram}
+      alt={`${m.title} — ${m.summary}`}
+    />
   );
 }
 
@@ -157,6 +156,28 @@ export function AiSocModulePage({ module: m }: { module: Module }) {
               }
             </p>
           </div>
+        </section>
+
+        {/* ---- Quiz CTA ---- */}
+        <section className="soc-noprint mt-8">
+          <Link
+            href="/ai-soc-prep/quiz"
+            className="flex max-w-(--soc-measure) items-center justify-between gap-3 rounded-md border-[1.5px] border-hairline bg-surface px-4 py-3.5 transition-colors hover:border-ink"
+          >
+            <span>
+              <span className="mono-label block text-accent-strong">
+                TEST YOURSELF — 8 QUESTIONS
+              </span>
+              <span className="text-[13.5px] text-muted-2">
+                {m.n <= 14
+                  ? "Every question here is answerable from this page. Pass at 60% to count toward the final exam."
+                  : "Sit the final exam — unlocked once every module quiz is passed."}
+              </span>
+            </span>
+            <span aria-hidden className="font-mono text-[16px] text-accent-strong">
+              →
+            </span>
+          </Link>
         </section>
 
         {/* ---- Related projects ---- */}
